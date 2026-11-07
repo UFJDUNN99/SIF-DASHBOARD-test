@@ -1,0 +1,2542 @@
+<<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Secret Island Festival 2027 — Master Revenue & Operations Dashboard</title>
+  
+  <!-- Firebase App, Auth & Realtime Database CDN SDK -->
+  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-database-compat.js"></script>
+  
+  <!-- SheetJS (XLSX) Library for Excel File Parsing -->
+  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+  
+  <!-- EmailJS SDK for Admin Registration Notifications -->
+  <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/emailjs.min.js"></script>
+
+  <style>
+    :root {
+      --bg-color: #0f172a;
+      --card-bg: #1e293b;
+      --text-main: #f8fafc;
+      --text-muted: #94a3b8;
+      --border-color: #334155;
+      --accent-rose: #e11d48;
+      --accent-purple: #8b5cf6;
+      --accent-amber: #f59e0b;
+      --accent-green: #10b981;
+      --accent-blue: #38bdf8;
+      --header-bg: #1e293b;
+      --input-bg: #0f172a;
+      --table-stripe: #334155;
+    }
+
+    html.light-theme {
+      --bg-color: #f1f5f9;
+      --card-bg: #ffffff;
+      --text-main: #0f172a;
+      --text-muted: #64748b;
+      --border-color: #cbd5e1;
+      --accent-rose: #dc2626;
+      --accent-purple: #7c3aed;
+      --accent-amber: #d97706;
+      --accent-green: #059669;
+      --accent-blue: #0284c7;
+      --header-bg: #ffffff;
+      --input-bg: #f8fafc;
+      --table-stripe: #e2e8f0;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; transition: background-color 0.2s ease, color 0.2s ease; }
+    body { background-color: var(--bg-color); color: var(--text-main); min-height: 100vh; padding-bottom: 40px; overflow-x: hidden; }
+    
+    header { background: var(--header-bg); border-bottom: 1px solid var(--border-color); padding: 12px 16px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+    .header-branding { display: flex; align-items: center; gap: 10px; }
+    .header-logo { width: 38px; height: 38px; object-fit: cover; border-radius: 50%; border: 2px solid var(--border-color); }
+    .header-title h1 { font-size: 16px; font-weight: 800; color: var(--text-main); letter-spacing: 0.5px; }
+    .header-title p { font-size: 11px; color: var(--text-muted); }
+    .header-controls { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+    .countdown-box { background: var(--input-bg); border: 1px solid var(--border-color); padding: 4px 10px; font-family: monospace; font-size: 11px; border-radius: 6px; color: var(--text-main); }
+    .countdown-box span { color: var(--accent-amber); font-weight: bold; }
+    
+    select, button, input, textarea { background: var(--input-bg); color: var(--text-main); border: 1px solid var(--border-color); padding: 6px 10px; border-radius: 6px; font-size: 12px; max-width: 100%; }
+    button { cursor: pointer; }
+    button:hover { opacity: 0.9; }
+
+    .io-btn { background: var(--border-color); border: 1px solid var(--border-color); font-weight: 600; padding: 6px 10px; border-radius: 6px; font-size: 11px; display: flex; align-items: center; gap: 4px; color: var(--text-main); }
+    
+    nav { background: var(--header-bg); border-bottom: 1px solid var(--border-color); padding: 4px 12px; display: flex; gap: 4px; overflow-x: auto; white-space: nowrap; -webkit-overflow-scrolling: touch; }
+    .tab-btn { background: none; border: none; color: var(--text-muted); padding: 10px 12px; font-size: 12px; font-weight: 600; cursor: pointer; border-bottom: 3px solid transparent; flex-shrink: 0; }
+    .tab-btn.active { color: var(--accent-blue); border-bottom-color: var(--accent-blue); background: var(--bg-color); }
+
+    main { max-width: 1450px; margin: 16px auto; padding: 0 12px; }
+    .tab-content { display: none; }
+    .tab-content.active { display: block; }
+
+    .unified-summary-card { background: var(--card-bg); border: 1px solid var(--border-color); border-radius: 12px; padding: 16px; margin-bottom: 20px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); }
+    .unified-summary-header { font-size: 15px; font-weight: 800; color: var(--accent-blue); margin-bottom: 14px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border-color); padding-bottom: 8px; }
+    .unified-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 12px; }
+    .unified-grid-bottom { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
+    @media(max-width: 1024px) {
+      .unified-grid { grid-template-columns: repeat(2, 1fr); }
+      .unified-grid-bottom { grid-template-columns: repeat(1, 1fr); }
+    }
+    @media(max-width: 600px) {
+      .unified-grid { grid-template-columns: 1fr; }
+    }
+    .summary-item { background: var(--input-bg); border: 1px solid var(--border-color); border-radius: 10px; padding: 12px; display: flex; flex-direction: column; justify-content: space-between; }
+    .summary-item p { font-size: 10px; text-transform: uppercase; color: var(--text-muted); font-weight: 700; letter-spacing: 0.5px; margin-bottom: 4px; }
+    .summary-item h3 { font-size: 18px; font-weight: 800; color: var(--text-main); }
+    .summary-item .sub-text { font-size: 10px; color: var(--text-muted); margin-top: 4px; }
+
+    .dashboard-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 16px; margin-bottom: 20px; }
+
+    .table-card { background: var(--card-bg); border: 1px solid var(--border-color); border-radius: 12px; overflow: hidden; margin-bottom: 20px; box-shadow: 0 1px 3px rgba(0,0,0,0.05); }
+    .table-header { padding: 14px 16px; border-bottom: 1px solid var(--border-color); font-weight: bold; font-size: 14px; display: flex; justify-content: space-between; align-items: center; background: var(--header-bg); flex-wrap: wrap; gap: 10px; }
+    .table-wrap { overflow-x: auto; width: 100%; -webkit-overflow-scrolling: touch; }
+    table { width: 100%; border-collapse: collapse; text-align: left; font-size: 12px; min-width: 600px; }
+    th { background: var(--input-bg); color: var(--text-muted); text-transform: uppercase; font-size: 10px; padding: 10px 12px; border-bottom: 1px solid var(--border-color); white-space: nowrap; font-weight: 700; }
+    td { padding: 10px 12px; border-bottom: 1px solid var(--border-color); color: var(--text-main); }
+    tr.section-row td { background: var(--table-stripe); font-weight: bold; color: var(--accent-blue); font-size: 12px; }
+    
+    .badge { padding: 3px 6px; border-radius: 4px; font-size: 10px; font-weight: 600; background: var(--input-bg); color: var(--text-main); display: inline-block; border: 1px solid var(--border-color); }
+    
+    .action-btn { background: var(--accent-blue); color: #0f172a; border: none; padding: 6px 12px; border-radius: 6px; font-weight: bold; cursor: pointer; font-size: 11px; }
+    .edit-btn { background: var(--input-bg); color: var(--text-main); border: 1px solid var(--border-color); padding: 4px 8px; border-radius: 4px; cursor: pointer; font-size: 11px; font-weight: 600; }
+
+    /* Timeline Accordion Styles */
+    .accordion-item { border-bottom: 1px solid var(--border-color); }
+    .accordion-header { background: var(--input-bg); padding: 12px 16px; font-weight: bold; font-size: 13px; display: flex; justify-content: space-between; align-items: center; cursor: pointer; }
+    .accordion-header:hover { background: var(--table-stripe); }
+    .accordion-body { padding: 14px; display: none; background: var(--card-bg); }
+    .accordion-body.active { display: block; }
+
+    /* Ideas Board */
+    .notes-board-grid { display: grid; grid-template-columns: 280px 1fr; gap: 16px; padding: 16px; }
+    @media(max-width: 800px) { .notes-board-grid { grid-template-columns: 1fr; } }
+    .note-form-card { background: var(--input-bg); border: 1px solid var(--border-color); border-radius: 10px; padding: 14px; height: fit-content; }
+    .note-card { background: var(--card-bg); border: 1px solid var(--border-color); border-radius: 10px; padding: 14px; margin-bottom: 12px; display: flex; justify-content: space-between; gap: 10px; align-items: flex-start; }
+
+    /* Login Modal Overlay */
+    #loginOverlay { position: fixed; inset: 0; background: rgba(15, 23, 42, 0.95); backdrop-filter: blur(4px); z-index: 9999; display: flex; align-items: center; justify-content: center; padding: 16px; }
+    .login-card { background: #1e293b; border: 1px solid #334155; border-radius: 16px; padding: 24px; width: 100%; max-width: 380px; box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.4); color: #f8fafc; }
+    .login-card h2 { font-size: 16px; font-weight: 800; color: #38bdf8; margin-bottom: 4px; text-align: center; }
+    .login-card p { font-size: 11px; color: #94a3b8; margin-bottom: 16px; text-align: center; }
+    .login-card input { width: 100%; padding: 10px 12px; font-size: 13px; margin-bottom: 10px; border-radius: 8px; border: 1px solid #334155; background: #0f172a; color: #f8fafc; }
+    .login-card button { width: 100%; padding: 10px; font-weight: bold; background: #38bdf8; color: #0f172a; border: none; border-radius: 8px; font-size: 13px; cursor: pointer; }
+    #loginError { color: #e11d48; font-size: 11px; margin-top: 8px; text-align: center; display: none; }
+
+    /* Modal */
+    .modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.7); z-index: 10000; align-items: center; justify-content: center; padding: 16px; }
+    .modal.active { display: flex !important; }
+    .modal-box { background: var(--card-bg); border: 1px solid var(--border-color); border-radius: 12px; width: 100%; max-width: 540px; padding: 20px; max-height: 90vh; overflow-y: auto; box-shadow: 0 10px 25px rgba(0,0,0,0.3); color: var(--text-main); }
+    .form-group { margin-bottom: 10px; }
+    .form-group label { display: block; font-size: 11px; font-weight: 600; color: var(--text-muted); margin-bottom: 4px; }
+    .form-group input, .form-group select, .form-group textarea { width: 100%; padding: 8px 10px; background: var(--input-bg); border: 1px solid var(--border-color); border-radius: 6px; color: var(--text-main); font-size: 12px; }
+  </style>
+</head>
+<body>
+
+  <!-- LOGIN GATE OVERLAY -->
+  <div id="loginOverlay">
+    <div class="login-card">
+      <h2>🔒 Secret Island Festival</h2>
+      <p>Log in with your staff email and password</p>
+      <input type="email" id="loginEmail" placeholder="Email address..." required>
+      <input type="password" id="loginPassword" placeholder="Password..." required>
+      <button type="button" id="loginSubmitBtn">Log In to Dashboard</button>
+      <div id="loginError"></div>
+
+      <div style="margin-top: 14px; text-align: center; border-top: 1px solid #334155; padding-top: 10px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px;">
+        <button type="button" id="openSignupBtn" style="background: none; border: none; color: #38bdf8; font-size: 11px; font-weight: bold; cursor: pointer; padding: 0;">Create Staff Account</button>
+        <button type="button" onclick="emergencyBypass()" style="background: none; border: none; color: #f59e0b; font-size: 11px; font-weight: bold; cursor: pointer; padding: 0;">⚠️ Emergency Bypass</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- SIGN-UP MODAL POPUP -->
+  <div id="signupModal" class="modal">
+    <div class="modal-box" style="max-width: 360px;">
+      <h3 style="margin-bottom: 10px; font-size: 15px; font-weight: bold; color: var(--accent-blue); text-align: center;">Register New Staff Account</h3>
+      <p style="font-size: 11px; color: var(--text-muted); margin-bottom: 14px; text-align: center;">New accounts require admin approval & role assignment.</p>
+      
+      <div class="form-group">
+        <label>Email Address</label>
+        <input type="email" id="signupEmail" placeholder="staff@ultrafunkula.co.uk" required>
+      </div>
+      <div class="form-group">
+        <label>Password (Min 6 characters)</label>
+        <input type="password" id="signupPassword" placeholder="••••••••" required>
+      </div>
+      
+      <div class="form-group" style="background: var(--input-bg); padding: 10px; border-radius: 8px; border: 1px solid var(--border-color);">
+        <label style="color: var(--accent-amber); font-weight: bold; margin-bottom: 4px;">🛡️ Human Verification (Anti-Bot)</label>
+        <div id="captchaQuestion" style="font-size: 12px; font-weight: bold; margin-bottom: 4px;">What is 4 + 3?</div>
+        <input type="number" id="captchaAnswer" placeholder="Enter answer..." required>
+      </div>
+
+      <div id="signupError" style="color: var(--accent-rose); font-size: 11px; margin-bottom: 8px; display: none;"></div>
+
+      <div style="display: flex; gap: 8px; margin-top: 14px;">
+        <button type="button" id="closeSignupBtn" style="background: var(--input-bg); flex: 1; padding: 8px;">Cancel</button>
+        <button type="button" id="submitSignupBtn" class="action-btn" style="flex: 1; padding: 8px;">Register</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- HEADER -->
+  <header>
+    <div class="header-branding">
+      <img src="https://secretislandfestival.co.uk/wp-content/uploads/2026/06/SIF-logo.png-1.webp" alt="Secret Island Festival Logo" class="header-logo">
+      <div class="header-title">
+        <h1>SECRET ISLAND FESTIVAL 2027</h1>
+        <p>Master Revenue & Operations Dashboard</p>
+      </div>
+    </div>
+    
+    <div class="header-controls">
+      <button onclick="toggleTheme()" class="io-btn" id="themeToggleBtn" title="Switch Light/Dark Theme">Theme</button>
+
+      <div id="syncStatus" style="font-size: 10px; font-weight: bold; color: var(--accent-amber); background: rgba(245, 158, 11, 0.15); padding: 4px 8px; border-radius: 6px; border: 1px solid var(--border-color);">
+        Connecting...
+      </div>
+
+      <div class="countdown-box">
+        <span id="countdown">Calculating...</span>
+      </div>
+
+      <button onclick="exportToJSON()" class="io-btn">📥 Backup</button>
+      <button onclick="triggerImport()" class="io-btn">📤 Restore</button>
+      <input type="file" id="jsonFileInput" accept=".json" style="display:none;" onchange="importFromJSON(event)">
+      
+      <div style="display: flex; align-items: center; gap: 6px; background: var(--input-bg); padding: 4px 8px; border-radius: 6px; border: 1px solid var(--border-color);">
+        <span id="loggedInUserDisplay" style="font-size: 10px; font-weight: bold; color: var(--accent-blue); max-width: 100px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">User</span>
+        <button onclick="handleLogout()" style="background: rgba(225, 29, 72, 0.2); color: var(--accent-rose); border: 1px solid var(--border-color); padding: 3px 6px; border-radius: 4px; font-size: 10px; font-weight: bold;">Logout</button>
+      </div>
+    </div>
+  </header>
+
+  <!-- NAVIGATION TABS -->
+  <nav>
+    <button onclick="openTab('dash')" id="btn-dash" class="tab-btn active">📊 Dashboard</button>
+    <button onclick="openTab('budget')" id="btn-budget" class="tab-btn">💰 Budget</button>
+    <button onclick="openTab('target')" id="btn-target" class="tab-btn">🎯 Sales</button>
+    <button onclick="openTab('plan')" id="btn-plan" class="tab-btn">📋 Project Plan</button>
+    <button onclick="openTab('timeline')" id="btn-timeline" class="tab-btn">📅 Timeline</button>
+    <button onclick="openTab('roles')" id="btn-roles" class="tab-btn">🛡️ Roles</button>
+    <button onclick="openTab('djs')" id="btn-djs" class="tab-btn">🎧 DJs & Acts</button>
+    <button onclick="openTab('socials')" id="btn-socials" class="tab-btn" style="color: var(--accent-blue);">📱 Socials</button>
+    <button onclick="openTab('notes')" id="btn-notes" class="tab-btn">💡 Ideas</button>
+    <button onclick="openTab('admin')" id="btn-admin" class="tab-btn" style="display: none; color: var(--accent-amber);">👑 Admin</button>
+  </nav>
+
+  <main>
+    <!-- TAB 1: EXECUTIVE DASHBOARD -->
+    <div id="tab-dash" class="tab-content active">
+      
+      <div class="unified-summary-card" id="adminSummaryBlock">
+        <div class="unified-summary-header">
+          <span id="summaryCardTitle">📊 Executive Financial & VAT Summary</span>
+        </div>
+        
+        <div class="unified-grid">
+          <div class="summary-item" id="sumBox1">
+            <p>1. Forecasted Income</p>
+            <h3 id="dashTotalIncome" style="color: var(--accent-blue);">£0.00</h3>
+            <div class="sub-text">Tickets + Bar + Sponsorship</div>
+          </div>
+          <div class="summary-item" id="sumBox2">
+            <p>2. Budget Allocation</p>
+            <h3 id="dashBudInc" style="color: var(--accent-purple);">£0.00</h3>
+            <div id="dashBudSpent" class="sub-text">Spent: £0.00 | Rem: £0.00</div>
+          </div>
+          <div class="summary-item" id="sumBox3">
+            <p>3. Profit Forecast</p>
+            <h3 id="dashVariance">£0.00</h3>
+            <div class="sub-text">Income - Budget - VAT</div>
+          </div>
+          <div class="summary-item">
+            <p>4. Actual Ticket Sales</p>
+            <h3 id="dashActualRevenue" style="color: var(--accent-green);">£0.00</h3>
+            <div id="dashTicketCounts" class="sub-text">Qty Sold: 0</div>
+          </div>
+        </div>
+
+        <div class="unified-grid-bottom" id="vatSummaryBottomRow">
+          <div class="summary-item">
+            <p>5. VAT Collected</p>
+            <h3 id="dashTotalVatCollected" style="color: var(--accent-amber);">£0.00</h3>
+            <div class="sub-text">Tickets, Bar, Sponsors</div>
+          </div>
+          <div class="summary-item">
+            <p>6. VAT Paid</p>
+            <h3 id="dashTotalVatPaid" style="color: var(--accent-amber);">£0.00</h3>
+            <div class="sub-text">Total VAT on Expenses</div>
+          </div>
+          <div class="summary-item">
+            <p>7. VAT due to HMRC</p>
+            <h3 id="dashNetVatLiability" style="color: var(--accent-rose);">£0.00</h3>
+            <div class="sub-text">Collected minus Paid</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="table-card" style="margin-bottom: 20px;">
+        <div class="table-header">
+          <span>📈 Actual Ticket Sales (Uploaded)</span>
+          <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+            <select id="ticketSortSelect" onchange="buildTables()" style="padding: 4px 6px; font-size: 11px;">
+              <option value="default">Default Sort</option>
+              <option value="qtyDesc">Qty (High-Low)</option>
+              <option value="revDesc">Revenue (£)</option>
+            </select>
+            <button onclick="triggerTicketExcelUpload()" class="action-btn" style="padding: 4px 8px; font-size: 11px;">📤 Upload Excel</button>
+            <input type="file" id="ticketExcelFileInput" accept=".xlsx, .xls, .csv" style="display:none;" onchange="handleTicketExcelUpload(event)">
+          </div>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Ticket Category / Type</th>
+                <th>Day / Session</th>
+                <th style="text-align: center;">Qty</th>
+                <th style="text-align: right;">Revenue (£)</th>
+              </tr>
+            </thead>
+            <tbody id="uploadedTicketSalesBody">
+              <tr><td colspan="4" style="text-align:center; color:var(--text-muted); font-style:italic; padding: 14px;">No file uploaded yet.</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="dashboard-grid">
+        <div class="table-card" id="adminRevenueCard">
+          <div class="table-header">Forecasted Revenue Breakdown</div>
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Stream / Day</th>
+                  <th style="text-align: right;">Tickets (£)</th>
+                  <th style="text-align: right;">Bar (£)</th>
+                  <th style="text-align: right;">Total (£)</th>
+                </tr>
+              </thead>
+              <tbody id="dashRevenueBody"></tbody>
+            </table>
+          </div>
+        </div>
+
+        <div class="table-card">
+          <div class="table-header">📋 Project Plan Task & Lead Status</div>
+          <div style="padding: 14px;">
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 12px;">
+              <div style="background: var(--input-bg); border: 1px solid var(--border-color); border-radius: 8px; padding: 10px;">
+                <p style="font-size: 10px; text-transform: uppercase; color: var(--text-muted); font-weight: 600;">Outstanding</p>
+                <h3 id="projTotalTasks" style="font-size: 16px; font-weight: 800; color: var(--accent-rose); margin-top: 2px;">0 Tasks</h3>
+              </div>
+              <div style="background: var(--input-bg); border: 1px solid var(--border-color); border-radius: 8px; padding: 10px;">
+                <p style="font-size: 10px; text-transform: uppercase; color: var(--text-muted); font-weight: 600;">Completion</p>
+                <h3 id="projProgressRate" style="font-size: 16px; font-weight: 800; color: var(--accent-green); margin-top: 2px;">0%</h3>
+              </div>
+            </div>
+            <div class="table-wrap" style="max-height: 180px; overflow-y: auto;">
+              <table>
+                <thead>
+                  <tr>
+                    <th>Team Lead</th>
+                    <th style="text-align: center;">Outstanding</th>
+                    <th style="text-align: right;">Status</th>
+                  </tr>
+                </thead>
+                <tbody id="leadWorkloadBody"></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="table-card" style="margin-top: 20px;">
+        <div class="table-header">
+          <span>🎧 Booked DJs & Acts by Stage</span>
+          <select id="frontStageFilter" onchange="buildTables()" style="padding: 4px 6px; font-size: 11px;">
+            <option value="ALL">All Stages</option>
+          </select>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Stage</th>
+                <th>Act Name</th>
+                <th>Type</th>
+                <th>Day</th>
+                <th>Time Slot</th>
+                <th style="text-align: right;">Cost (£)</th>
+              </tr>
+            </thead>
+            <tbody id="dashStageBody"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- TAB 2: BUDGET TRACKER -->
+    <div id="tab-budget" class="tab-content">
+      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 10px; margin-bottom: 16px;">
+        <div class="summary-item" style="background:var(--card-bg); border:1px solid var(--border-color);">
+          <p>Total Net Budget</p>
+          <h3 id="topBudgetNet" style="color: var(--accent-blue); font-size: 16px;">£0.00</h3>
+        </div>
+        <div class="summary-item" style="background:var(--card-bg); border:1px solid var(--border-color);">
+          <p>Total VAT Amount</p>
+          <h3 id="topBudgetVat" style="color: var(--text-muted); font-size: 16px;">£0.00</h3>
+        </div>
+        <div class="summary-item" style="background:var(--card-bg); border:1px solid var(--border-color);">
+          <p>Total Budget (Inc. VAT)</p>
+          <h3 id="topBudgetInc" style="color: var(--accent-purple); font-size: 16px;">£0.00</h3>
+        </div>
+        <div class="summary-item" style="background:var(--card-bg); border:1px solid var(--border-color);">
+          <p>Total Actual Spent</p>
+          <h3 id="topBudgetSpent" style="color: var(--accent-amber); font-size: 16px;">£0.00</h3>
+        </div>
+      </div>
+
+      <div class="table-card" style="margin-bottom: 24px;">
+        <div class="table-header">
+          <span>Festival Budget Line Items</span>
+          <div style="display: flex; gap: 6px;" id="budgetActionBtns">
+            <button class="action-btn" onclick="openBudgetModal(-1)">+ Add Item</button>
+            <button onclick="resetBudget()" class="edit-btn">Reset</button>
+          </div>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Line Item</th>
+                <th>Category</th>
+                <th style="text-align: right;">Net (£)</th>
+                <th style="text-align: center;">VAT</th>
+                <th style="text-align: right;">VAT (£)</th>
+                <th style="text-align: right;">Inc. VAT (£)</th>
+                <th style="text-align: right;">Spent (£)</th>
+                <th style="text-align: center;">Owner</th>
+                <th style="text-align: center;" class="admin-col-header">Action</th>
+              </tr>
+            </thead>
+            <tbody id="budgetBody"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- OUTSTANDING MONEY SECTION -->
+      <div class="table-card">
+        <div class="table-header">
+          <span>⏳ Owed Money Outstanding Section</span>
+          <div style="display: flex; gap: 6px; align-items: center; flex-wrap: wrap;">
+            <button class="action-btn" onclick="openOutstandingModal(-1)">+ Add Outstanding Payment</button>
+            <button onclick="triggerOutstandingExcelUpload()" class="io-btn" style="padding: 5px 8px; font-size: 11px;">📤 Upload Excel</button>
+            <input type="file" id="outstandingExcelFileInput" accept=".xlsx, .xls, .csv" style="display:none;" onchange="handleOutstandingExcelUpload(event)">
+            <button onclick="resetOutstanding()" class="edit-btn">Reset</button>
+          </div>
+        </div>
+
+        <!-- SUMMARY CARDS FOR OUTSTANDING -->
+        <div style="padding: 14px; background: var(--input-bg); border-bottom: 1px solid var(--border-color); display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 12px;">
+          <div style="background: var(--card-bg); padding: 10px; border-radius: 8px; border: 1px solid var(--border-color);">
+            <p style="font-size: 10px; color: var(--text-muted); text-transform: uppercase; font-weight: bold;">Overall Outstanding Owed</p>
+            <h3 id="overallOwedAmount" style="font-size: 16px; color: var(--accent-rose); margin-top: 4px;">£0.00</h3>
+          </div>
+          <div style="background: var(--card-bg); padding: 10px; border-radius: 8px; border: 1px solid var(--border-color);">
+            <p style="font-size: 10px; color: var(--text-muted); text-transform: uppercase; font-weight: bold;">Next Immediate Payment</p>
+            <h3 id="nextPaymentAmount" style="font-size: 16px; color: var(--accent-amber); margin-top: 4px;">£0.00</h3>
+            <span id="nextPaymentDate" style="font-size: 10px; color: var(--text-muted);">Due: -</span>
+          </div>
+          <div style="background: var(--card-bg); padding: 10px; border-radius: 8px; border: 1px solid var(--border-color);">
+            <label style="font-size: 10px; color: var(--text-muted); text-transform: uppercase; font-weight: bold; display: block; margin-bottom: 4px;">Installment Plan Calculator</label>
+            <select id="installmentMonths" onchange="buildOutstandingTable()" style="width: 100%; padding: 4px; font-size: 11px;">
+              <option value="1">Pay over 1 Month (Full)</option>
+              <option value="2">Split over 2 Months</option>
+              <option value="3">Split over 3 Months</option>
+            </select>
+            <div id="installmentCalcOutput" style="font-size: 11px; font-weight: bold; color: var(--accent-green); margin-top: 4px;">Monthly: £0.00</div>
+          </div>
+        </div>
+
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th style="text-align: center; width: 50px;">Paid</th>
+                <th>Supplier / Payee</th>
+                <th>Description</th>
+                <th style="text-align: right;">Amount Due (£)</th>
+                <th>Due Date</th>
+                <th style="text-align: center;">Status</th>
+                <th style="text-align: center;">Action</th>
+              </tr>
+            </thead>
+            <tbody id="outstandingBody"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- TAB 3: SALES TARGETS -->
+    <div id="tab-target" class="tab-content">
+      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 16px; margin-bottom: 20px;">
+        <div style="background: var(--card-bg); border: 1px solid var(--border-color); border-radius: 12px; padding: 16px;">
+          <p style="color: var(--accent-blue); font-size: 12px; font-weight: 800; margin-bottom: 10px; text-transform: uppercase;">🎫 Ticket Sales Breakdown & Quantities</p>
+          <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; margin-bottom: 10px; text-align: center; background: var(--input-bg); padding: 8px; border-radius: 6px;">
+            <div>
+              <span style="font-size: 9px; color: var(--text-muted); display: block;">FRI (£ / Qty)</span>
+              <span id="blockFriTicket" style="font-size: 11px; font-weight: bold;">£0</span>
+              <span id="blockFriQty" style="font-size: 9px; color: var(--accent-blue); display: block;">0 qty</span>
+            </div>
+            <div>
+              <span style="font-size: 9px; color: var(--text-muted); display: block;">SAT (£ / Qty)</span>
+              <span id="blockSatTicket" style="font-size: 11px; font-weight: bold;">£0</span>
+              <span id="blockSatQty" style="font-size: 9px; color: var(--accent-blue); display: block;">0 qty</span>
+            </div>
+            <div>
+              <span style="font-size: 9px; color: var(--text-muted); display: block;">WKND (£ / Qty)</span>
+              <span id="blockWkndTicket" style="font-size: 11px; font-weight: bold; color: var(--accent-purple);">£0</span>
+              <span id="blockWkndQty" style="font-size: 9px; color: var(--accent-purple); display: block;">0 qty</span>
+            </div>
+          </div>
+          <div style="display: flex; justify-content: space-between; align-items: baseline; border-top: 1px solid var(--border-color); padding-top: 8px;">
+            <h3 id="topConsolidatedTicketRev" style="color: var(--accent-green); font-size: 16px;">£0.00</h3>
+            <span id="topConsolidatedTicketQty" style="font-size: 10px; color: var(--text-muted);">0 Tickets</span>
+          </div>
+        </div>
+
+        <div style="background: var(--card-bg); border: 1px solid var(--border-color); border-radius: 12px; padding: 16px;">
+          <p style="color: var(--accent-amber); font-size: 12px; font-weight: 800; margin-bottom: 10px; text-transform: uppercase;">🍻 Bar & Grand Total</p>
+          <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; margin-bottom: 10px; text-align: center; background: var(--input-bg); padding: 8px; border-radius: 6px;">
+            <div><span style="font-size: 9px; color: var(--text-muted); display: block;">FRI BAR</span><span id="blockFriBar" style="font-size: 11px; font-weight: bold;">£0</span></div>
+            <div><span style="font-size: 9px; color: var(--text-muted); display: block;">SAT BAR</span><span id="blockSatBar" style="font-size: 11px; font-weight: bold;">£0</span></div>
+            <div><span style="font-size: 9px; color: var(--text-muted); display: block;">WKND BAR</span><span id="blockWkndBar" style="font-size: 11px; font-weight: bold;">£0</span></div>
+          </div>
+          <div style="display: flex; justify-content: space-between; align-items: baseline; border-top: 1px solid var(--border-color); padding-top: 8px;">
+            <span id="topConsolidatedBarRev" style="font-size: 13px; font-weight: bold; color: var(--accent-amber);">£0.00</span>
+            <span id="topConsolidatedGrandTotal" style="font-size: 16px; font-weight: 800; color: var(--accent-green);">£0.00</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="table-card" style="margin-bottom: 20px;">
+        <div class="table-header">
+          <span>🤝 Sponsorship & Partner Income</span>
+          <div style="display: flex; gap: 6px;" id="sponsorshipActionBtns">
+            <button class="action-btn" onclick="openSponsorshipModal(-1)">+ Add Sponsorship</button>
+            <button onclick="resetSponsorships()" class="edit-btn">Reset</button>
+          </div>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Company</th>
+                <th>Area</th>
+                <th style="text-align: right;">Excl. VAT (£)</th>
+                <th style="text-align: right;">VAT (£)</th>
+                <th style="text-align: right;">Inc. VAT (£)</th>
+                <th style="text-align: center;" class="admin-col-header">Action</th>
+              </tr>
+            </thead>
+            <tbody id="sponsorshipBody"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="table-card" style="margin-bottom: 20px;">
+        <div class="table-header">
+          <span>🍻 Bar Spend Multipliers</span>
+        </div>
+        <div style="padding: 14px; display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 12px;">
+          <div style="background: var(--input-bg); border: 1px solid var(--border-color); border-radius: 8px; padding: 10px;">
+            <label style="font-size: 10px; font-weight: 600; color: var(--text-muted); display: block; margin-bottom: 4px;">Friday Spend / Ticket (£)</label>
+            <input type="number" step="0.50" id="friBarMultiplier" value="35.00" onchange="updateBarMultiplier(this, 'Friday')">
+            <div id="friBarCalcOutput" style="font-size: 10px; color: var(--accent-green); margin-top: 4px;">Total: £0</div>
+          </div>
+          <div style="background: var(--input-bg); border: 1px solid var(--border-color); border-radius: 8px; padding: 10px;">
+            <label style="font-size: 10px; font-weight: 600; color: var(--text-muted); display: block; margin-bottom: 4px;">Saturday Spend / Ticket (£)</label>
+            <input type="number" step="0.50" id="satBarMultiplier" value="65.00" onchange="updateBarMultiplier(this, 'Saturday')">
+            <div id="satBarCalcOutput" style="font-size: 10px; color: var(--accent-green); margin-top: 4px;">Total: £0</div>
+          </div>
+          <div style="background: var(--input-bg); border: 1px solid var(--border-color); border-radius: 8px; padding: 10px;">
+            <label style="font-size: 10px; font-weight: 600; color: var(--text-muted); display: block; margin-bottom: 4px;">Weekend Spend / Ticket (£)</label>
+            <input type="number" step="0.50" id="wkndBarMultiplier" value="100.00" onchange="updateBarMultiplier(this, 'Weekend')">
+            <div id="wkndBarCalcOutput" style="font-size: 10px; color: var(--accent-green); margin-top: 4px;">Total: £0</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="table-card">
+        <div class="table-header">
+          <span>Ticket Pricing Matrix</span>
+          <div style="display: flex; gap: 6px;" id="targetActionBtns">
+            <button class="action-btn" onclick="openTargetModal(-1)">+ Add Ticket</button>
+            <button onclick="resetTargets()" class="edit-btn">Reset</button>
+          </div>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Day</th>
+                <th>Type</th>
+                <th style="text-align: center;">Qty</th>
+                <th style="text-align: right;">Excl. (£)</th>
+                <th style="text-align: right;">VAT (£)</th>
+                <th style="text-align: right;">Inc. (£)</th>
+                <th style="text-align: right;">Total (£)</th>
+                <th style="text-align: center;" class="admin-col-header">Action</th>
+              </tr>
+            </thead>
+            <tbody id="targetBody"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- TAB 4: PROJECT PLAN -->
+    <div id="tab-plan" class="tab-content">
+      <div class="table-card">
+        <div class="table-header">
+          <span>📋 Project Plan & Operational Tasks</span>
+          <div style="display: flex; gap: 6px;" id="planActionBtns">
+            <button class="action-btn" onclick="openPlanAddModal()">+ Add Task</button>
+            <button onclick="resetPlan()" class="edit-btn">Reset</button>
+          </div>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th style="text-align: center; width: 40px;">Done</th>
+                <th>Task / Area</th>
+                <th style="text-align: center;">Lead 1</th>
+                <th style="text-align: center;">Lead 2</th>
+                <th style="text-align: center;">Lead 3</th>
+                <th>Update</th>
+                <th>Next Steps</th>
+                <th>Owner</th>
+                <th>Date</th>
+                <th style="text-align: center;">Action</th>
+              </tr>
+            </thead>
+            <tbody id="planBody"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- TAB 5: PROJECT TIMELINE (ACCORDION VIEW) -->
+    <div id="tab-timeline" class="tab-content">
+      <div class="table-card">
+        <div class="table-header">
+          <span>📅 Project Timeline (Feb–Jul 2027) — Category Accordions</span>
+        </div>
+        <div id="timelineAccordionContainer"></div>
+      </div>
+    </div>
+
+    <!-- TAB 6: ROLES & RESPONSIBILITIES -->
+    <div id="tab-roles" class="tab-content">
+      <div class="table-card">
+        <div class="table-header">
+          <span>🛡️ Roles & Responsibilities Matrix</span>
+          <div style="display: flex; gap: 6px;">
+            <button class="action-btn" onclick="openRolesModal(-1)">+ Add Role</button>
+            <button onclick="resetRoles()" class="edit-btn">Reset</button>
+          </div>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Area / Task</th>
+                <th>Lead (1)</th>
+                <th>Secondary (2)</th>
+                <th>Support (3)</th>
+                <th style="text-align: center;">Action</th>
+              </tr>
+            </thead>
+            <tbody id="rolesBody"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- TAB 7: DJS & PRODUCTION -->
+    <div id="tab-djs" class="tab-content">
+      <div class="table-card" style="margin-bottom: 20px;">
+        <div class="table-header">
+          <span>📅 Stage Availability Calendar</span>
+          <div style="display: flex; gap: 4px;">
+            <button onclick="switchCalDay('Friday 30th July')" id="calBtnFri" class="action-btn" style="padding: 3px 8px; font-size: 10px;">Friday</button>
+            <button onclick="switchCalDay('Saturday 31st July')" id="calBtnSat" class="action-btn" style="background: var(--input-bg); color: var(--text-main); border: 1px solid var(--border-color); padding: 3px 8px; font-size: 10px;">Saturday</button>
+          </div>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Time Slot</th>
+                <th>Lighthouse (Main)</th>
+                <th>Cactus (Live)</th>
+                <th>Causeway (DnB)</th>
+                <th>Sand Bar (Disco)</th>
+              </tr>
+            </thead>
+            <tbody id="calendarMatrixBody"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="table-card">
+        <div class="table-header">
+          <span>🎧 DJs & Production Line-Up</span>
+          <div style="display: flex; gap: 6px;" id="djActionBtns">
+            <button class="action-btn" onclick="openDjModal(-1)">+ Add Act</button>
+            <button onclick="resetDjs()" class="edit-btn">Reset</button>
+          </div>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Act Name</th>
+                <th>Type</th>
+                <th style="text-align: right;">Cost (£)</th>
+                <th style="text-align: center;">VAT</th>
+                <th style="text-align: right;">VAT (£)</th>
+                <th style="text-align: right;">Total (£)</th>
+                <th>Stage</th>
+                <th>Day</th>
+                <th>Time & Duration</th>
+                <th>Drinks</th>
+                <th>Food</th>
+                <th style="text-align: center;" class="admin-col-header">Action</th>
+              </tr>
+            </thead>
+            <tbody id="djBody"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- TAB 8: SOCIALS PLANNER & METRICS -->
+    <div id="tab-socials" class="tab-content">
+      <div class="unified-summary-card">
+        <div class="unified-summary-header">
+          <span>📱 Social Media Performance & Analytics API Connector</span>
+          <div style="display: flex; gap: 8px; align-items: center;">
+            <button class="action-btn" onclick="openSocialsAdminModal()" style="background: var(--accent-amber); color: #0f172a;">⚙️ Set Admin Analytics Link</button>
+          </div>
+        </div>
+        <div class="unified-grid" style="grid-template-columns: repeat(4, 1fr);">
+          <div class="summary-item">
+            <p>Total Reach / Impressions</p>
+            <h3 id="metricReach" style="color: var(--accent-blue);">0</h3>
+            <div class="sub-text">Connected API Feed</div>
+          </div>
+          <div class="summary-item">
+            <p>Engagement Rate</p>
+            <h3 id="metricEngagement" style="color: var(--accent-green);">0.0%</h3>
+            <div class="sub-text">Likes, Shares, Comments</div>
+          </div>
+          <div class="summary-item">
+            <p>Tickets Driven (UTM)</p>
+            <h3 id="metricTickets" style="color: var(--accent-purple);">0</h3>
+            <div class="sub-text">Direct Conversions</div>
+          </div>
+          <div class="summary-item">
+            <p>External Analytics Portal</p>
+            <a id="adminExternalPortalBtn" href="#" target="_blank" class="action-btn" style="text-align: center; margin-top: 6px; text-decoration: none; display: inline-block;">Open Dashboard ↗</a>
+          </div>
+        </div>
+      </div>
+
+      <div class="table-card">
+        <div class="table-header">
+          <span>📅 Social Media Posting Planner & Frequency Guidelines</span>
+          <button class="action-btn" onclick="openSocialPostModal(-1)">+ Add Post Item</button>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Campaign Phase</th>
+                <th>Platform</th>
+                <th>Content Topic / Format</th>
+                <th>Posting Frequency</th>
+                <th>Scheduled Date</th>
+                <th style="text-align: center;">Status</th>
+                <th style="text-align: center;">Action</th>
+              </tr>
+            </thead>
+            <tbody id="socialsPlannerBody"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- TAB 9: IDEAS BOARD -->
+    <div id="tab-notes" class="tab-content">
+      <div class="table-card">
+        <div class="table-header">
+          <span>💡 Department Ideas Board</span>
+        </div>
+
+        <div class="notes-board-grid">
+          <div class="note-form-card">
+            <h3 style="font-size: 13px; font-weight: bold; color: var(--accent-blue); margin-bottom: 8px;">+ Post Idea</h3>
+            <div class="form-group">
+              <label>Department</label>
+              <select id="noteDept">
+                <option value="Infrastructure">Infrastructure</option>
+                <option value="Facilities">Facilities</option>
+                <option value="Theme & Design">Theme & Design</option>
+                <option value="Marketing">Marketing</option>
+                <option value="Administration">Administration</option>
+                <option value="Production">Production</option>
+                <option value="Acts">Acts</option>
+                <option value="Partnerships">Partnerships</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label>Idea Content</label>
+              <textarea id="noteContent" rows="3" placeholder="Enter suggestion..." required></textarea>
+            </div>
+            <button onclick="submitNewNote()" class="action-btn" style="width: 100%;">Post</button>
+          </div>
+
+          <div>
+            <div class="form-group" style="margin-bottom: 10px;">
+              <input type="text" id="notesSearchInput" oninput="buildNotesBoard()" placeholder="🔍 Search ideas..." style="padding: 6px 10px; font-size: 11px;">
+            </div>
+            <div id="notesFeedContainer"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- TAB 10: ADMIN CONTROLS -->
+    <div id="tab-admin" class="tab-content">
+      <div class="table-card" style="margin-bottom: 20px;">
+        <div class="table-header">
+          <span>👑 Staff Permission Management</span>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Staff Email</th>
+                <th>Last Login</th>
+                <th style="text-align: center;">Role</th>
+                <th style="text-align: center;">Status / Action</th>
+              </tr>
+            </thead>
+            <tbody id="adminUsersBody">
+              <tr><td colspan="4" style="text-align:center; color:var(--text-muted); padding:14px;">Loading staff registries...</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="table-card">
+        <div class="table-header">
+          <span>📜 System Activity Audit Logs</span>
+          <button onclick="clearAuditLogs()" class="edit-btn">Clear Logs</button>
+        </div>
+        <div class="table-wrap" style="max-height: 300px; overflow-y: auto;">
+          <table>
+            <thead>
+              <tr>
+                <th>Timestamp</th>
+                <th>User</th>
+                <th>Action</th>
+              </tr>
+            </thead>
+            <tbody id="auditLogsBody">
+              <tr><td colspan="3" style="text-align:center; color:var(--text-muted); padding:14px;">No audit logs recorded yet.</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+  </main>
+
+  <!-- MODALS -->
+  <div id="targetModal" class="modal">
+    <div class="modal-box">
+      <h3 id="targetModalTitle" style="margin-bottom: 14px; font-size: 15px; font-weight: bold; color: var(--accent-blue);">Edit Ticket Target</h3>
+      <input type="hidden" id="targetEditIndex">
+      <div class="form-group">
+        <label>Day</label>
+        <select id="tModalDay">
+          <option value="Friday 30th July">Friday 30th July</option>
+          <option value="Saturday 31st July">Saturday 31st July</option>
+          <option value="Weekend Pass">Weekend Pass</option>
+        </select>
+      </div>
+      <div class="form-group"><label>Ticket Type</label><input type="text" id="tModalType" placeholder="e.g. Weekend VIP Adult" required></div>
+      <div class="form-group" style="display: grid; grid-template-columns: 1fr 1fr; gap: 6px;">
+        <div><label>Quantity</label><input type="number" id="tModalQty" required></div>
+        <div><label>Price Inc. VAT (£)</label><input type="number" step="0.01" id="tModalPrice" required></div>
+      </div>
+      <div style="display: flex; justify-content: flex-end; gap: 6px; margin-top: 16px;">
+        <button type="button" onclick="closeTargetModal()" style="background: var(--input-bg);">Cancel</button>
+        <button type="button" onclick="saveTargetItem()" class="action-btn">Save</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="sponsorshipModal" class="modal">
+    <div class="modal-box">
+      <h3 id="sponsorshipModalTitle" style="margin-bottom: 14px; font-size: 15px; font-weight: bold; color: var(--accent-blue);">Add Sponsorship</h3>
+      <input type="hidden" id="sponsorshipEditIndex">
+      <div class="form-group"><label>Company Name</label><input type="text" id="sModalCompany" placeholder="e.g. Red Bull" required></div>
+      <div class="form-group"><label>Area Sponsored</label><input type="text" id="sModalArea" placeholder="e.g. Main Stage" required></div>
+      <div class="form-group"><label>Amount Inc. VAT (£)</label><input type="number" step="0.01" id="sModalAmount" placeholder="17500.00" required></div>
+      <div style="display: flex; justify-content: flex-end; gap: 6px; margin-top: 16px;">
+        <button type="button" onclick="closeSponsorshipModal()" style="background: var(--input-bg);">Cancel</button>
+        <button type="button" onclick="saveSponsorshipItem()" class="action-btn">Save</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="outstandingModal" class="modal">
+    <div class="modal-box">
+      <h3 id="outstandingModalTitle" style="margin-bottom: 14px; font-size: 15px; font-weight: bold; color: var(--accent-blue);">Add Outstanding Payment</h3>
+      <input type="hidden" id="outstandingEditIndex">
+      <div class="form-group"><label>Supplier / Payee</label><input type="text" id="oModalSupplier" placeholder="e.g. Fencing Co Ltd" required></div>
+      <div class="form-group"><label>Description</label><input type="text" id="oModalDesc" placeholder="e.g. 50% Deposit for Perimeter Fencing" required></div>
+      <div class="form-group" style="display: grid; grid-template-columns: 1fr 1fr; gap: 6px;">
+        <div><label>Amount Due (£)</label><input type="number" step="0.01" id="oModalAmount" placeholder="1545.50" required></div>
+        <div><label>Due Date</label><input type="date" id="oModalDate" required></div>
+      </div>
+      <div style="display: flex; justify-content: flex-end; gap: 6px; margin-top: 16px;">
+        <button type="button" onclick="closeOutstandingModal()" style="background: var(--input-bg);">Cancel</button>
+        <button type="button" onclick="saveOutstandingItem()" class="action-btn">Save Payment</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="socialsAdminModal" class="modal">
+    <div class="modal-box" style="max-width: 400px;">
+      <h3 style="margin-bottom: 10px; font-size: 15px; font-weight: bold; color: var(--accent-blue);">Configure Admin Analytics Portal Link</h3>
+      <p style="font-size: 11px; color: var(--text-muted); margin-bottom: 12px;">Paste the external link (e.g. Looker Studio, Hootsuite Dashboard, or Custom API URL) for team access.</p>
+      <div class="form-group">
+        <label>Portal URL</label>
+        <input type="url" id="adminPortalUrlInput" placeholder="https://lookerstudio.google.com/..." required>
+      </div>
+      <div style="display: flex; justify-content: flex-end; gap: 6px; margin-top: 14px;">
+        <button type="button" onclick="closeSocialsAdminModal()" style="background: var(--input-bg);">Cancel</button>
+        <button type="button" onclick="saveSocialsAdminLink()" class="action-btn">Save Link</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="socialPostModal" class="modal">
+    <div class="modal-box">
+      <h3 style="margin-bottom: 14px; font-size: 15px; font-weight: bold; color: var(--accent-blue);">Add / Edit Social Post</h3>
+      <input type="hidden" id="socialPostEditIndex">
+      <div class="form-group"><label>Campaign Phase</label><input type="text" id="spModalPhase" placeholder="e.g. Lineup Reveal Phase 1" required></div>
+      <div class="form-group" style="display: grid; grid-template-columns: 1fr 1fr; gap: 6px;">
+        <div>
+          <label>Platform</label>
+          <select id="spModalPlatform">
+            <option value="Instagram (Reels/Feed)">Instagram (Reels/Feed)</option>
+            <option value="TikTok">TikTok</option>
+            <option value="Facebook">Facebook</option>
+            <option value="X (Twitter)">X (Twitter)</option>
+            <option value="YouTube Shorts">YouTube Shorts</option>
+          </select>
+        </div>
+        <div><label>Posting Frequency Guideline</label><input type="text" id="spModalFreq" placeholder="e.g. 2x Weekly" required></div>
+      </div>
+      <div class="form-group"><label>Content Topic & Format</label><input type="text" id="spModalTopic" placeholder="e.g. Headliner announcement teaser video" required></div>
+      <div class="form-group" style="display: grid; grid-template-columns: 1fr 1fr; gap: 6px;">
+        <div><label>Scheduled Date</label><input type="date" id="spModalDate" required></div>
+        <div>
+          <label>Status</label>
+          <select id="spModalStatus">
+            <option value="Planned">Planned</option>
+            <option value="Drafted">Drafted</option>
+            <option value="Scheduled">Scheduled</option>
+            <option value="Published">Published</option>
+          </select>
+        </div>
+      </div>
+      <div style="display: flex; justify-content: flex-end; gap: 6px; margin-top: 16px;">
+        <button type="button" onclick="closeSocialPostModal()" style="background: var(--input-bg);">Cancel</button>
+        <button type="button" onclick="saveSocialPostItem()" class="action-btn">Save Post</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="planModal" class="modal">
+    <div class="modal-box">
+      <h3 style="margin-bottom: 14px; font-size: 15px; font-weight: bold; color: var(--accent-blue);">Edit Task Status</h3>
+      <input type="hidden" id="planEditIndex">
+      <div class="form-group"><label>Task</label><input type="text" id="pModalTask" disabled style="color: var(--text-muted); background: var(--input-bg);"></div>
+      <div class="form-group" style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 6px;">
+        <div><label>Lead 1</label><input type="text" id="pModalP1"></div>
+        <div><label>Lead 2</label><input type="text" id="pModalP2"></div>
+        <div><label>Lead 3</label><input type="text" id="pModalP3"></div>
+      </div>
+      <div class="form-group"><label>Current Update</label><textarea id="pModalUpdate" rows="2"></textarea></div>
+      <div class="form-group"><label>Next Steps</label><textarea id="pModalSteps" rows="2"></textarea></div>
+      <div class="form-group" style="display: grid; grid-template-columns: 1fr 1fr; gap: 6px;">
+        <div><label>Next Steps Owner</label><input type="text" id="pModalStepsOwner"></div>
+        <div><label>Next Steps Date</label><input type="text" id="pModalStepsDate" placeholder="e.g. 1st Feb"></div>
+      </div>
+      <div style="display: flex; justify-content: flex-end; gap: 6px; margin-top: 16px;">
+        <button type="button" onclick="closePlanModal()" style="background: var(--input-bg);">Cancel</button>
+        <button type="button" onclick="savePlanItem()" class="action-btn">Save Changes</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="planAddModal" class="modal">
+    <div class="modal-box">
+      <h3 style="margin-bottom: 14px; font-size: 15px; font-weight: bold; color: var(--accent-blue);">Add New Task</h3>
+      <div class="form-group">
+        <label>Department / Section</label>
+        <select id="pAddSection">
+          <option value="Infrastructure">Infrastructure</option>
+          <option value="Facilities">Facilities</option>
+          <option value="Theme & Design">Theme & Design</option>
+          <option value="Marketing">Marketing</option>
+          <option value="Administration">Administration</option>
+          <option value="Production">Production</option>
+          <option value="Acts">Acts</option>
+          <option value="Partnerships">Partnerships</option>
+        </select>
+      </div>
+      <div class="form-group"><label>Task Name</label><input type="text" id="pAddTaskName" placeholder="e.g. Lighting Setup" required></div>
+      <div class="form-group" style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 6px;">
+        <div><label>Lead 1</label><input type="text" id="pAddP1" placeholder="JD"></div>
+        <div><label>Lead 2</label><input type="text" id="pAddP2" placeholder="MP"></div>
+        <div><label>Lead 3</label><input type="text" id="pAddP3" placeholder="-"></div>
+      </div>
+      <div class="form-group"><label>Update</label><textarea id="pAddUpdate" rows="2" placeholder="Quotes requested"></textarea></div>
+      <div class="form-group"><label>Next Steps</label><textarea id="pAddSteps" rows="2" placeholder="Review contract"></textarea></div>
+      <div class="form-group" style="display: grid; grid-template-columns: 1fr 1fr; gap: 6px;">
+        <div><label>Owner</label><input type="text" id="pAddStepsOwner" placeholder="James Dunn"></div>
+        <div><label>Date</label><input type="text" id="pAddStepsDate" placeholder="15th Feb"></div>
+      </div>
+      <div style="display: flex; justify-content: flex-end; gap: 6px; margin-top: 16px;">
+        <button type="button" onclick="closePlanAddModal()" style="background: var(--input-bg);">Cancel</button>
+        <button type="button" onclick="saveNewPlanItem()" class="action-btn">Add Task</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="rolesModal" class="modal">
+    <div class="modal-box">
+      <h3 style="margin-bottom: 14px; font-size: 15px; font-weight: bold; color: var(--accent-blue);">Edit Role Assignment</h3>
+      <input type="hidden" id="rolesEditIndex">
+      <div class="form-group"><label>Area / Task</label><input type="text" id="rModalTask" placeholder="e.g. Fencing" required></div>
+      <div class="form-group" style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 6px;">
+        <div><label>Lead (1)</label><input type="text" id="rModalM1"></div>
+        <div><label>Secondary (2)</label><input type="text" id="rModalM2"></div>
+        <div><label>Support (3)</label><input type="text" id="rModalM3"></div>
+      </div>
+      <div style="display: flex; justify-content: flex-end; gap: 6px; margin-top: 16px;">
+        <button type="button" onclick="closeRolesModal()" style="background: var(--input-bg);">Cancel</button>
+        <button type="button" onclick="saveRolesItem()" class="action-btn">Save</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="djModal" class="modal">
+    <div class="modal-box">
+      <h3 id="djModalTitle" style="margin-bottom: 14px; font-size: 15px; font-weight: bold; color: var(--accent-blue);">Add / Edit Act</h3>
+      <input type="hidden" id="djEditIndex">
+      <div class="form-group"><label>Act Name</label><input type="text" id="djName" placeholder="e.g. Dan Shake" required></div>
+      <div class="form-group"><label>Type</label><select id="djType"><option value="DJ">DJ</option><option value="Production">Production</option><option value="Live Act">Live Act</option></select></div>
+      <div class="form-group" style="display: grid; grid-template-columns: 1fr 1fr; gap: 6px;">
+        <div><label>Cost (£)</label><input type="number" step="0.01" id="djCost" placeholder="0.00"></div>
+        <div><label>VAT Applicable</label><select id="djVat"><option value="YES">YES</option><option value="NO">NO</option></select></div>
+      </div>
+      <div class="form-group" style="display: grid; grid-template-columns: 1fr 1fr; gap: 6px;">
+        <div><label>Stage</label><select id="djStage"><option value="Lighthouse (Main Stage)">Lighthouse (Main)</option><option value="Cactus (Live Stage)">Cactus (Live)</option><option value="The Causeway (DnB stage)">Causeway (DnB)</option><option value="The Sand Bar (Disco stage)">Sand Bar (Disco)</option></select></div>
+        <div><label>Day</label><select id="djDay" onchange="updateTimeSlots()"><option value="Friday 30th July">Friday</option><option value="Saturday 31st July">Saturday</option></select></div>
+      </div>
+      <div class="form-group" style="display: grid; grid-template-columns: 1fr 1fr; gap: 6px;">
+        <div><label>Start Time Slot</label><select id="djTime"></select></div>
+        <div><label>Set Duration</label><select id="djDuration"><option value="1">1 Hour</option><option value="1.5">1 Hour 30 Mins</option><option value="2" selected>2 Hours</option></select></div>
+      </div>
+      <div class="form-group" style="display: grid; grid-template-columns: 1fr 1fr; gap: 6px;">
+        <div><label>Drinks Package</label><input type="text" id="djDrinks" placeholder="Rider"></div>
+        <div><label>Food Package</label><input type="text" id="djFood" placeholder="Catering"></div>
+      </div>
+      <div style="display: flex; justify-content: flex-end; gap: 6px; margin-top: 16px;">
+        <button type="button" onclick="closeDjModal()" style="background: var(--input-bg);">Cancel</button>
+        <button type="button" onclick="saveDjItem()" class="action-btn">Save Act</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const firebaseConfig = {
+      apiKey: "AIzaSyCETSeAhkKL4dnBiD3TeDgk_q-LqxluX8k",
+      authDomain: "secret-island-festival-2-bd7f0.firebaseapp.com",
+      databaseURL: "https://secret-island-festival-2-bd7f0-default-rtdb.europe-west1.firebasedatabase.app",
+      projectId: "secret-island-festival-2-bd7f0",
+      storageBucket: "secret-island-festival-2-bd7f0.firebasestorage.app",
+      messagingSenderId: "634080744129",
+      appId: "1:634080744129:web:70ea3b11e294bf733bfa40"
+    };
+
+    if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
+    const auth = firebase.auth();
+    const db = firebase.database();
+
+    try { emailjs.init("YOUR_EMAILJS_PUBLIC_KEY"); } catch(e) {}
+
+    let currentUserEmail = "";
+    let userRolesMap = {}; 
+    let usersRegistry = {};
+    let auditLogsList = [];
+    let currentCaptchaSolution = 7;
+    let uploadedTicketSalesRows = [];
+    let adminSocialsPortalUrl = "https://lookerstudio.google.com/";
+
+    function emergencyBypass() {
+      const emailInput = prompt("Enter your staff email for emergency access:", "james.dunn@ultrafunkula.co.uk");
+      if (emailInput) {
+        currentUserEmail = emailInput.trim().toLowerCase();
+        document.getElementById('loginOverlay').style.display = 'none';
+        document.getElementById('loggedInUserDisplay').innerText = currentUserEmail;
+        initFirebaseSync();
+        alert("⚠️ Emergency bypass activated.");
+      }
+    }
+
+    function toggleTheme() {
+      const htmlEl = document.documentElement;
+      if (htmlEl.classList.contains('light-theme')) {
+        htmlEl.classList.remove('light-theme');
+        localStorage.setItem('sif27_theme', 'dark');
+      } else {
+        htmlEl.classList.add('light-theme');
+        localStorage.setItem('sif27_theme', 'light');
+      }
+    }
+
+    if (localStorage.getItem('sif27_theme') === 'light') {
+      document.documentElement.classList.add('light-theme');
+    }
+
+    function handleLogin() {
+      const emailEl = document.getElementById('loginEmail');
+      const passwordEl = document.getElementById('loginPassword');
+      const errorEl = document.getElementById('loginError');
+      if (!emailEl || !passwordEl || !errorEl) return;
+
+      const email = emailEl.value.trim().toLowerCase();
+      const password = passwordEl.value;
+
+      if (!email || !password) {
+        errorEl.innerText = "Please enter email and password.";
+        errorEl.style.display = 'block';
+        return;
+      }
+
+      auth.signInWithEmailAndPassword(email, password)
+        .then((userCredential) => {
+          const key = email.replace(/\./g, '_');
+          if (email.includes('james.dunn@ultrafunkula')) {
+            db.ref(`sif27_festival_data/userRoles/${key}`).set('admin');
+            document.getElementById('loginOverlay').style.display = 'none';
+            recordUserLogin(email);
+            return;
+          }
+          db.ref(`sif27_festival_data/userRoles/${key}`).once('value', (snapshot) => {
+            const role = snapshot.val();
+            if (!role || role === 'pending') {
+              auth.signOut();
+              errorEl.innerText = "⚠️ Account pending admin approval by James Dunn.";
+              errorEl.style.display = 'block';
+              return;
+            }
+            document.getElementById('loginOverlay').style.display = 'none';
+            recordUserLogin(email);
+          });
+        })
+        .catch((error) => {
+          errorEl.innerText = error.message;
+          errorEl.style.display = 'block';
+        });
+    }
+
+    function handleLogout() {
+      auth.signOut().then(() => location.reload());
+    }
+
+    function generateCaptcha() {
+      const n1 = Math.floor(Math.random() * 8) + 2;
+      const n2 = Math.floor(Math.random() * 8) + 1;
+      currentCaptchaSolution = n1 + n2;
+      document.getElementById('captchaQuestion').innerText = `What is ${n1} + ${n2}?`;
+      document.getElementById('captchaAnswer').value = '';
+    }
+
+    function openSignupModal() {
+      document.getElementById('signupEmail').value = '';
+      document.getElementById('signupPassword').value = '';
+      document.getElementById('signupError').style.display = 'none';
+      generateCaptcha();
+      document.getElementById('signupModal').classList.add('active');
+    }
+    function closeSignupModal() { document.getElementById('signupModal').classList.remove('active'); }
+
+    function handleSignup() {
+      const email = document.getElementById('signupEmail').value.trim().toLowerCase();
+      const password = document.getElementById('signupPassword').value;
+      const captchaInput = parseInt(document.getElementById('captchaAnswer').value);
+      const errorEl = document.getElementById('signupError');
+
+      if (!email || !password) { errorEl.innerText = "Fill in email and password."; errorEl.style.display = 'block'; return; }
+      if (captchaInput !== currentCaptchaSolution) { errorEl.innerText = "Incorrect verification answer."; errorEl.style.display = 'block'; generateCaptcha(); return; }
+
+      auth.createUserWithEmailAndPassword(email, password)
+        .then(() => {
+          db.ref(`sif27_festival_data/userRoles/${email.replace(/\./g, '_')}`).set('pending');
+          db.ref(`sif27_festival_data/usersRegistry/${email.replace(/\./g, '_')}`).set({ email, lastLogin: new Date().toISOString() });
+          logActivity(email, `Registered staff account (Pending)`);
+          auth.signOut();
+          closeSignupModal();
+          alert("✅ Registration successful! Pending approval by James Dunn.");
+        })
+        .catch((error) => { errorEl.innerText = error.message; errorEl.style.display = 'block'; });
+    }
+
+    function recordUserLogin(email) {
+      db.ref(`sif27_festival_data/usersRegistry/${email.replace(/\./g, '_')}`).update({ email, lastLogin: new Date().toISOString() });
+      logActivity(email, `Logged in`);
+    }
+
+    function logActivity(email, actionDesc) {
+      db.ref('sif27_festival_data/auditLogs').push({ timestamp: new Date().toLocaleString('en-GB'), email: email || currentUserEmail || 'System', action: actionDesc });
+    }
+
+    auth.onAuthStateChanged((user) => {
+      if (user) {
+        currentUserEmail = user.email.toLowerCase();
+        document.getElementById('loginOverlay').style.display = 'none';
+        document.getElementById('loggedInUserDisplay').innerText = currentUserEmail;
+        initFirebaseSync();
+      }
+    });
+
+    const defaultBudget = [
+      { item: "Alcohol", cat: "Bar & Beverage", net: 17500, vat: "YES", update: 22200, owner: "James Dunn" },
+      { item: "Bar Costs", cat: "Bar & Beverage", net: 1000, vat: "YES", update: 0, owner: "James Dunn" },
+      { item: "Decoration", cat: "Production", net: 5500, vat: "YES", update: 0, owner: "Matt Prevett" },
+      { item: "Design/Social media management", cat: "Marketing", net: 5740, vat: "NO", update: 0, owner: "Ben Wass" },
+      { item: "EPOS and Wifi", cat: "Operations", net: 1779, vat: "YES", update: 2160, owner: "Kevin Day" },
+      { item: "Event DJ or Act fee", cat: "Production", net: 30000, vat: "YES", update: 0, owner: "James Dunn" },
+      { item: "Fencing", cat: "Operations", net: 3091, vat: "YES", update: 0, owner: "Kevin Day" },
+      { item: "Fire Safety", cat: "Operations", net: 400, vat: "YES", update: 480, owner: "Kevin Day" },
+      { item: "Fuel", cat: "Operations", net: 2507, vat: "YES", update: 0, owner: "Kevin Day" },
+      { item: "General Expenses", cat: "General", net: 1000, vat: "YES", update: 0, owner: "Matt Prevett" },
+      { item: "Generators", cat: "Operations", net: 3567, vat: "YES", update: 0, owner: "Kevin Day" },
+      { item: "Insurance", cat: "General", net: 1059, vat: "NO", update: 0, owner: "Matt Prevett" },
+      { item: "Jowers Fees", cat: "General", net: 17000, vat: "NO", update: 17000, owner: "Matt Prevett" },
+      { item: "Marquees and Tents", cat: "Production", net: 6500, vat: "YES", update: 0, owner: "Kevin Day" },
+      { item: "Music License", cat: "Marketing", net: 3100, vat: "YES", update: 0, owner: "Ben Wass" },
+      { item: "Photo/Video", cat: "Marketing", net: 2000, vat: "NO", update: 0, owner: "Ben Wass" },
+      { item: "Production/Sound and Lights", cat: "Production", net: 20000, vat: "NO", update: 0, owner: "James Dunn" },
+      { item: "Refrigeration", cat: "Bar & Beverage", net: 1250, vat: "YES", update: 0, owner: "James Dunn" },
+      { item: "Security", cat: "Staff & Security", net: 12000, vat: "YES", update: 0, owner: "Kevin Day" },
+      { item: "Bar Staff (non) agency", cat: "Staff & Security", net: 5500, vat: "NO", update: 6280, owner: "James Dunn" },
+      { item: "Bar Staff Agency", cat: "Staff & Security", net: 4000, vat: "YES", update: 0, owner: "James Dunn" },
+      { item: "Build Staff", cat: "Staff & Security", net: 5000, vat: "NO", update: 0, owner: "Kevin Day" },
+      { item: "Toilets", cat: "Operations", net: 5560, vat: "YES", update: 0, owner: "Kevin Day" },
+      { item: "Traffic Management", cat: "Operations", net: 3100, vat: "YES", update: 0, owner: "Kevin Day" },
+      { item: "Transport", cat: "Operations", net: 3200, vat: "NO", update: 0, owner: "Kevin Day" },
+      { item: "Vehicles and Site Office", cat: "Operations", net: 3965, vat: "YES", update: 0, owner: "Kevin Day" },
+      { item: "Waste Management", cat: "Operations", net: 2500, vat: "YES", update: 0, owner: "Kevin Day" },
+      { item: "Contingency", cat: "General", net: 5000, vat: "YES", update: 0, owner: "Matt Prevett" }
+    ];
+
+    const defaultTargets = [
+      { day: "Friday 30th July", type: "P.S. Adult", qty: 75, price: 25 },
+      { day: "Friday 30th July", type: "Adult PP", qty: 300, price: 35 },
+      { day: "Friday 30th July", type: "Child 6-17", qty: 75, price: 5 },
+      { day: "Saturday 31st July", type: "Pre Sale", qty: 75, price: 35 },
+      { day: "Saturday 31st July", type: "SEB", qty: 125, price: 40 },
+      { day: "Saturday 31st July", type: "P1 PP", qty: 500, price: 50 },
+      { day: "Weekend Pass", type: "Weekend Early Bird", qty: 250, price: 85 }
+    ];
+
+    const defaultSponsorships = [{ company: "Red Bull", area: "Main Stage", amount: 17500 }];
+
+    const defaultOutstanding = [
+      { supplier: "Fencing Co Ltd", desc: "Perimeter Fencing 50% Deposit", amount: 1545.50, dueDate: "2027-03-01", paid: false },
+      { supplier: "Event Generators", desc: "Generator Fleet Booking", amount: 1783.50, dueDate: "2027-04-15", paid: false }
+    ];
+
+    const defaultSocialPosts = [
+      { phase: "Launch & Early Bird", platform: "Instagram (Reels/Feed)", topic: "Official 2027 Trailer & Dates Announcement", freq: "1x Weekly", date: "2027-02-01", status: "Published" },
+      { phase: "Lineup Phase 1", platform: "TikTok", topic: "Headliner teaser clips & sound bites", freq: "2x Weekly", date: "2027-03-15", status: "Scheduled" },
+      { phase: "Tickets Countdown", platform: "Facebook", topic: "Tier 1 Sell-out warning & countdown reminder", freq: "3x Weekly", date: "2027-05-01", status: "Planned" }
+    ];
+
+    const defaultPlan = [
+      { section: "Infrastructure" },
+      { task: "Fencing", p1: "JD", p2: "-", p3: "-", update: "booked", steps: "confirm delivery", stepsOwner: "JD", stepsDate: "1st Feb", completed: false },
+      { task: "Stretch Tents", p1: "MP", p2: "TG", p3: "-", update: "pending", steps: "get quotes", stepsOwner: "MP", stepsDate: "15th Feb", completed: false },
+      { section: "Facilities" },
+      { task: "Toilets", p1: "DW", p2: "JD", p3: "-", update: "reviewing", steps: "sign contract", stepsOwner: "DW", stepsDate: "1st Mar", completed: false }
+    ];
+
+    const defaultRoles = [
+      { section: "Infrastructure" },
+      { task: "Fencing", m1: "James Dunn", m2: "-", m3: "-" },
+      { section: "Facilities" },
+      { task: "Toilets", m1: "Darren Wallond", m2: "James Dunn", m3: "-" },
+      { section: "Production" },
+      { task: "Stage & Sound", m1: "James Dunn", m2: "Matt Prevett", m3: "-" },
+      { section: "Marketing" },
+      { task: "Socials & Branding", m1: "Ben Wass", m2: "-", m3: "-" }
+    ];
+
+    const defaultDjs = [
+      { name: "Dan Shake", type: "DJ", cost: 3292, vat: "YES", stage: "Lighthouse (Main Stage)", day: "Saturday 31st July", time: "21:00", duration: 2, drinks: "Rider", food: "Catering" }
+    ];
+
+    const defaultNotes = [
+      { id: 1, dept: "Marketing", text: "Explore local merch brand partnerships.", author: "team@ultrafunkula.co.uk", timestamp: Date.now() }
+    ];
+
+    let budgetData = [...defaultBudget];
+    let targetData = [...defaultTargets];
+    let sponsorshipData = [...defaultSponsorships];
+    let outstandingData = [...defaultOutstanding];
+    let socialPostsData = [...defaultSocialPosts];
+    let planData = [...defaultPlan];
+    let rolesData = [...defaultRoles];
+    let djData = [...defaultDjs];
+    let notesData = [...defaultNotes];
+    let currentCalDay = "Friday 30th July";
+    let barMultipliers = { Friday: 35.00, Saturday: 65.00, Weekend: 100.00 };
+
+    function initFirebaseSync() {
+      db.ref('sif27_festival_data').on('value', (snapshot) => {
+        const val = snapshot.val();
+        const statusEl = document.getElementById('syncStatus');
+        if (val) {
+          budgetData = val.budgetData || [...defaultBudget];
+          targetData = val.targetData || [...defaultTargets];
+          sponsorshipData = val.sponsorshipData || [...defaultSponsorships];
+          outstandingData = val.outstandingData || [...defaultOutstanding];
+          socialPostsData = val.socialPostsData || [...defaultSocialPosts];
+          planData = val.planData || [...defaultPlan];
+          rolesData = val.rolesData || [...defaultRoles];
+          djData = val.djData || [...defaultDjs];
+          notesData = val.notesData || [...defaultNotes];
+          if (val.barMultipliers) barMultipliers = val.barMultipliers;
+          if (val.uploadedTicketSalesRows) uploadedTicketSalesRows = val.uploadedTicketSalesRows;
+          if (val.adminSocialsPortalUrl) adminSocialsPortalUrl = val.adminSocialsPortalUrl;
+          userRolesMap = val.userRoles || {};
+          usersRegistry = val.usersRegistry || {};
+          auditLogsList = val.auditLogs ? Object.values(val.auditLogs) : [];
+
+          if (currentUserEmail.includes('james.dunn@ultrafunkula')) {
+            userRolesMap[currentUserEmail.replace(/\./g, '_')] = 'admin';
+          }
+          if (statusEl) {
+            statusEl.innerText = "🟢 Live";
+            statusEl.style.background = "rgba(16, 185, 129, 0.15)";
+            statusEl.style.color = "var(--accent-green)";
+          }
+        } else {
+          saveAllToFirebase();
+        }
+        applyRolePermissions();
+        buildTables();
+      });
+    }
+
+    function saveAllToFirebase() {
+      db.ref('sif27_festival_data').update({ 
+        budgetData, targetData, sponsorshipData, outstandingData, socialPostsData, 
+        planData, rolesData, djData, notesData, barMultipliers, uploadedTicketSalesRows, 
+        adminSocialsPortalUrl, userRoles: userRolesMap, usersRegistry 
+      });
+    }
+
+    function exportToJSON() {
+      try {
+        const dataSnapshot = {
+          budgetData, targetData, sponsorshipData, outstandingData, socialPostsData,
+          planData, rolesData, djData, notesData, barMultipliers, uploadedTicketSalesRows,
+          adminSocialsPortalUrl, userRoles: userRolesMap, usersRegistry, auditLogs: auditLogsList
+        };
+        const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(dataSnapshot, null, 2));
+        const downloadAnchor = document.createElement('a');
+        downloadAnchor.setAttribute("href", dataStr);
+        downloadAnchor.setAttribute("download", `SIF27_Dashboard_Backup_${new Date().toISOString().split('T')[0]}.json`);
+        document.body.appendChild(downloadAnchor);
+        downloadAnchor.click();
+        downloadAnchor.remove();
+        alert("✅ JSON Backup exported successfully!");
+      } catch (err) {
+        alert("❌ Error generating backup file: " + err.message);
+      }
+    }
+
+    function triggerImport() {
+      document.getElementById('jsonFileInput').click();
+    }
+
+    function importFromJSON(event) {
+      const file = event.target.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = function(e) {
+        try {
+          const parsed = JSON.parse(e.target.result);
+          if (parsed.budgetData) budgetData = parsed.budgetData;
+          if (parsed.targetData) targetData = parsed.targetData;
+          if (parsed.sponsorshipData) sponsorshipData = parsed.sponsorshipData;
+          if (parsed.outstandingData) outstandingData = parsed.outstandingData;
+          if (parsed.socialPostsData) socialPostsData = parsed.socialPostsData;
+          if (parsed.planData) planData = parsed.planData;
+          if (parsed.rolesData) rolesData = parsed.rolesData;
+          if (parsed.djData) djData = parsed.djData;
+          if (parsed.notesData) notesData = parsed.notesData;
+          if (parsed.barMultipliers) barMultipliers = parsed.barMultipliers;
+          if (parsed.uploadedTicketSalesRows) uploadedTicketSalesRows = parsed.uploadedTicketSalesRows;
+          if (parsed.adminSocialsPortalUrl) adminSocialsPortalUrl = parsed.adminSocialsPortalUrl;
+          
+          saveAllToFirebase();
+          buildTables();
+          alert("✅ Restore successful!");
+        } catch (err) {
+          alert("❌ Invalid JSON backup file.");
+        }
+      };
+      reader.readAsText(file);
+    }
+
+    function formatGBP(num) {
+      return '£' + (num || 0).toLocaleString('en-GB', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    }
+
+    function getUserRole() {
+      if (currentUserEmail.includes('james.dunn@ultrafunkula')) return 'admin';
+      const key = currentUserEmail.replace(/\./g, '_');
+      return userRolesMap[key] || 'team';
+    }
+
+    function applyRolePermissions() {
+      const role = getUserRole();
+      const isAdmin = currentUserEmail.includes('james.dunn@ultrafunkula');
+      const isDirectorOrTeam = role === 'director' || role === 'team' || isAdmin;
+
+      const setDisplay = (id, val) => { const el = document.getElementById(id); if (el) el.style.display = val; };
+
+      setDisplay('btn-admin', isAdmin ? 'block' : 'none');
+      setDisplay('planActionBtns', isDirectorOrTeam ? 'flex' : 'none');
+
+      document.querySelectorAll('.admin-col-header').forEach(th => {
+        th.style.display = (isAdmin || role === 'director') ? 'table-cell' : 'none';
+      });
+    }
+
+    function openTab(tabName) {
+      document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+      document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+      
+      const targetTab = document.getElementById('tab-' + tabName);
+      const targetBtn = document.getElementById('btn-' + tabName);
+      if (targetTab) targetTab.classList.add('active');
+      if (targetBtn) targetBtn.classList.add('active');
+    }
+
+    function triggerTicketExcelUpload() { document.getElementById('ticketExcelFileInput').click(); }
+
+    function handleTicketExcelUpload(event) {
+      const file = event.target.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = function(e) {
+        try {
+          const data = new Uint8Array(e.target.result);
+          const workbook = XLSX.read(data, { type: 'array' });
+          const jsonRows = XLSX.utils.sheet_to_json(workbook.Sheets[workbook.SheetNames[0]], { defval: "" });
+          if (jsonRows.length === 0) return;
+
+          uploadedTicketSalesRows = [];
+          jsonRows.forEach(row => {
+            const type = row.Type || row.Name || row.Category || "Ticket";
+            const qty = parseInt(row.Qty || row.Quantity || 0) || 0;
+            const rev = parseFloat(String(row.Revenue || row.Price || 0).replace(/[^0-9.-]+/g,"")) || 0;
+            uploadedTicketSalesRows.push({ type, day: /weekend|wknd/i.test(type) ? "Weekend" : "Saturday", qty, rev });
+          });
+
+          saveAllToFirebase();
+          buildTables();
+          alert("✅ Uploaded successfully!");
+        } catch (err) { alert("❌ Error parsing file."); }
+      };
+      reader.readAsArrayBuffer(file);
+    }
+
+    function triggerOutstandingExcelUpload() { document.getElementById('outstandingExcelFileInput').click(); }
+
+    function handleOutstandingExcelUpload(event) {
+      const file = event.target.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = function(e) {
+        try {
+          const data = new Uint8Array(e.target.result);
+          const workbook = XLSX.read(data, { type: 'array' });
+          const jsonRows = XLSX.utils.sheet_to_json(workbook.Sheets[workbook.SheetNames[0]], { defval: "" });
+          if (jsonRows.length === 0) return;
+
+          jsonRows.forEach(row => {
+            const supplier = row.Supplier || row.Payee || row.Name || "Supplier";
+            const desc = row.Description || row.Desc || "Invoice payment";
+            const amount = parseFloat(String(row.Amount || row.Due || 0).replace(/[^0-9.-]+/g,"")) || 0;
+            const dueDate = row.DueDate || row.Date || new Date().toISOString().split('T')[0];
+            outstandingData.push({ supplier, desc, amount, dueDate, paid: false });
+          });
+
+          saveAllToFirebase();
+          buildTables();
+          alert("✅ Outstanding payments imported successfully!");
+        } catch (err) { alert("❌ Error parsing file."); }
+      };
+      reader.readAsArrayBuffer(file);
+    }
+
+    function buildTables() {
+      try {
+        buildCalendarMatrix();
+        buildTimelineAccordion();
+        buildNotesBoard();
+        buildRolesTable();
+        buildAdminPanel();
+        buildOutstandingTable();
+        buildSocialsPlanner();
+
+        const role = getUserRole();
+        const isAdmin = currentUserEmail.includes('james.dunn@ultrafunkula');
+        const isDirector = role === 'director' || isAdmin;
+
+        // Auto-sync Total DJ Costs to Budget
+        let totalDjsIncCost = 0;
+        djData.forEach(act => {
+          const base = parseFloat(act.cost) || 0;
+          totalDjsIncCost += act.vat === 'YES' ? base * 1.2 : base;
+        });
+
+        const djBudgetIndex = budgetData.findIndex(b => /DJ|Act fee/i.test(b.item));
+        if (djBudgetIndex !== -1) {
+          budgetData[djBudgetIndex].update = totalDjsIncCost;
+        }
+
+        let uploadedTotalQty = 0, uploadedTotalRev = 0;
+        uploadedTicketSalesRows.forEach(r => { uploadedTotalQty += r.qty; uploadedTotalRev += r.rev; });
+
+        document.getElementById('dashActualRevenue').innerText = formatGBP(uploadedTotalRev);
+        document.getElementById('dashTicketCounts').innerHTML = `Qty: <b>${uploadedTotalQty}</b>`;
+
+        const ticketBody = document.getElementById('uploadedTicketSalesBody');
+        if (ticketBody && uploadedTicketSalesRows.length > 0) {
+          let tHtml = '';
+          uploadedTicketSalesRows.forEach(r => {
+            tHtml += `<tr><td>${r.type}</td><td>${r.day}</td><td style="text-align:center;">${r.qty}</td><td style="text-align:right;">${formatGBP(r.rev)}</td></tr>`;
+          });
+          ticketBody.innerHTML = tHtml;
+        }
+
+        let totalSalesRevenue = 0, friQty = 0, satQty = 0, wkndQty = 0;
+        let friTicketRev = 0, satTicketRev = 0, wkndTicketRev = 0;
+
+        targetData.forEach(row => {
+          const itemTotal = (row.qty || 0) * (row.price || 0);
+          totalSalesRevenue += itemTotal;
+          const isWeekend = /weekend|wknd/i.test(row.day) || /weekend|wknd/i.test(row.type);
+
+          if (isWeekend) {
+            wkndQty += (row.qty || 0);
+            wkndTicketRev += itemTotal;
+          } else if (row.day.includes("Friday")) {
+            friQty += (row.qty || 0);
+            friTicketRev += itemTotal;
+          } else {
+            satQty += (row.qty || 0);
+            satTicketRev += itemTotal;
+          }
+        });
+
+        const friBar = friQty * barMultipliers.Friday;
+        const satBar = satQty * barMultipliers.Saturday;
+        const wkndBar = wkndQty * barMultipliers.Weekend;
+        const totalBar = friBar + satBar + wkndBar;
+
+        let totalSponsorshipInc = 0;
+        let totalSponsorshipVat = 0;
+        let sponsorshipTableHtml = '';
+
+        sponsorshipData.forEach((row, idx) => {
+          const incAmt = parseFloat(row.amount) || 0;
+          const exclAmt = incAmt / 1.2;
+          const vatAmt = incAmt - exclAmt;
+          totalSponsorshipInc += incAmt;
+          totalSponsorshipVat += vatAmt;
+
+          sponsorshipTableHtml += `<tr>
+            <td style="font-weight:bold; color:var(--accent-blue);">${row.company}</td>
+            <td>${row.area}</td>
+            <td style="text-align:right; color:var(--text-muted);">${formatGBP(exclAmt)}</td>
+            <td style="text-align:right; color:var(--text-muted);">${formatGBP(vatAmt)}</td>
+            <td style="text-align:right; font-weight:bold; color:var(--accent-green);">${formatGBP(incAmt)}</td>
+            <td style="text-align:center;">
+              <button class="edit-btn" onclick="openSponsorshipModal(${idx})">Edit</button>
+              <button class="edit-btn" onclick="deleteSponsorshipItem(${idx})" style="background:rgba(225,29,72,0.2); color:var(--accent-rose); border-color:var(--border-color); margin-left:4px;">Del</button>
+            </td>
+          </tr>`;
+        });
+        sponsorshipTableHtml += `<tr class="total-row"><td colspan="2" style="text-transform: uppercase;">Total Sponsorship Summary</td><td style="text-align:right; color:var(--text-muted);">${formatGBP(totalSponsorshipInc - totalSponsorshipVat)}</td><td style="text-align:right; color:var(--text-muted);">${formatGBP(totalSponsorshipVat)}</td><td style="text-align:right; color:var(--accent-green); font-weight:bold;">${formatGBP(totalSponsorshipInc)}</td><td></td></tr>`;
+        const sBody = document.getElementById('sponsorshipBody');
+        if (sBody) sBody.innerHTML = sponsorshipTableHtml;
+
+        const grandTotal = totalSalesRevenue + totalBar + totalSponsorshipInc;
+        const totalVatCollected = (totalSalesRevenue / 6) + (totalBar / 6) + totalSponsorshipVat;
+
+        document.getElementById('friBarMultiplier').value = barMultipliers.Friday;
+        document.getElementById('satBarMultiplier').value = barMultipliers.Saturday;
+        document.getElementById('wkndBarMultiplier').value = barMultipliers.Weekend;
+
+        document.getElementById('friBarCalcOutput').innerText = `Total: ${formatGBP(friBar)}`;
+        document.getElementById('satBarCalcOutput').innerText = `Total: ${formatGBP(satBar)}`;
+        document.getElementById('wkndBarCalcOutput').innerText = `Total: ${formatGBP(wkndBar)}`;
+
+        document.getElementById('blockFriTicket').innerText = formatGBP(friTicketRev);
+        document.getElementById('blockFriQty').innerText = `${friQty} tickets`;
+        document.getElementById('blockSatTicket').innerText = formatGBP(satTicketRev);
+        document.getElementById('blockSatQty').innerText = `${satQty} tickets`;
+        document.getElementById('blockWkndTicket').innerText = formatGBP(wkndTicketRev);
+        document.getElementById('blockWkndQty').innerText = `${wkndQty} tickets`;
+
+        document.getElementById('topConsolidatedTicketRev').innerText = formatGBP(totalSalesRevenue);
+        document.getElementById('topConsolidatedTicketQty').innerText = `${friQty + satQty + wkndQty} Tickets`;
+
+        document.getElementById('blockFriBar').innerText = formatGBP(friBar);
+        document.getElementById('blockSatBar').innerText = formatGBP(satBar);
+        document.getElementById('blockWkndBar').innerText = formatGBP(wkndBar);
+        document.getElementById('topConsolidatedBarRev').innerText = formatGBP(totalBar);
+        document.getElementById('topConsolidatedGrandTotal').innerText = formatGBP(grandTotal);
+
+        let bNet = 0, bVat = 0, bInc = 0, bSpent = 0;
+        budgetData.forEach(row => {
+          const v = row.vat === 'YES' ? (row.net || 0) * 0.2 : 0;
+          bNet += (row.net || 0); bVat += v; bInc += ((row.net || 0) + v); bSpent += (row.update || 0);
+        });
+
+        document.getElementById('topBudgetNet').innerText = formatGBP(bNet);
+        document.getElementById('topBudgetVat').innerText = formatGBP(bVat);
+        document.getElementById('topBudgetInc').innerText = formatGBP(bInc);
+        document.getElementById('topBudgetSpent').innerText = formatGBP(bSpent);
+
+        const netVatLiability = totalVatCollected - bVat;
+        const profitVariance = grandTotal - bInc - netVatLiability;
+
+        if (isDirector) {
+          document.getElementById('dashTotalIncome').innerText = formatGBP(grandTotal);
+          document.getElementById('dashBudInc').innerText = formatGBP(bInc);
+          document.getElementById('dashBudSpent').innerText = `Spent: ${formatGBP(bSpent)} | Rem: ${formatGBP(bInc - bSpent)}`;
+          
+          const varEl = document.getElementById('dashVariance');
+          varEl.innerText = formatGBP(profitVariance);
+          varEl.style.color = profitVariance >= 0 ? 'var(--accent-green)' : 'var(--accent-rose)';
+
+          document.getElementById('dashTotalVatCollected').innerText = formatGBP(totalVatCollected);
+          document.getElementById('dashTotalVatPaid').innerText = formatGBP(bVat);
+          
+          const liabilityEl = document.getElementById('dashNetVatLiability');
+          liabilityEl.innerText = formatGBP(netVatLiability);
+          liabilityEl.style.color = netVatLiability >= 0 ? 'var(--accent-rose)' : 'var(--accent-green)';
+
+          let revTableHtml = `
+            <tr><td>Friday Event</td><td style="text-align:right;">${formatGBP(friTicketRev)}</td><td style="text-align:right;">${formatGBP(friBar)}</td><td style="text-align:right; font-weight:bold;">${formatGBP(friTicketRev + friBar)}</td></tr>
+            <tr><td>Saturday Event</td><td style="text-align:right;">${formatGBP(satTicketRev)}</td><td style="text-align:right;">${formatGBP(satBar)}</td><td style="text-align:right; font-weight:bold;">${formatGBP(satTicketRev + satBar)}</td></tr>
+            <tr><td>Weekend Passes</td><td style="text-align:right;">${formatGBP(wkndTicketRev)}</td><td style="text-align:right;">${formatGBP(wkndBar)}</td><td style="text-align:right; font-weight:bold;">${formatGBP(wkndTicketRev + wkndBar)}</td></tr>
+            <tr><td>Sponsorship & Partners</td><td style="text-align:right;">-</td><td style="text-align:right;">-</td><td style="text-align:right; font-weight:bold;">${formatGBP(totalSponsorshipInc)}</td></tr>
+          `;
+          document.getElementById('dashRevenueBody').innerHTML = revTableHtml;
+        }
+
+        // Render Stage Filter & DJ Breakdown
+        const frontStageFilter = document.getElementById('frontStageFilter');
+        const currentFilterVal = frontStageFilter ? frontStageFilter.value : "ALL";
+        const officialStages = ["Lighthouse (Main Stage)", "Cactus (Live Stage)", "The Causeway (DnB stage)", "The Sand Bar (Disco stage)"];
+
+        if (frontStageFilter) {
+          let filterHtml = `<option value="ALL">All Stages (${djData.length} Acts)</option>`;
+          officialStages.forEach(st => {
+            filterHtml += `<option value="${st}" ${currentFilterVal === st ? 'selected' : ''}>${st}</option>`;
+          });
+          frontStageFilter.innerHTML = filterHtml;
+        }
+
+        const dashStageBody = document.getElementById('dashStageBody');
+        if (dashStageBody) {
+          const selectedStage = frontStageFilter ? frontStageFilter.value : "ALL";
+          const filteredDjs = djData.filter(row => {
+            const st = (row.stage || "Lighthouse (Main Stage)").trim();
+            return selectedStage === "ALL" || st === selectedStage;
+          });
+
+          if (filteredDjs.length === 0) {
+            dashStageBody.innerHTML = `<tr><td colspan="6" style="text-align:center; color:var(--text-muted); font-style:italic; padding: 14px;">No DJs or acts found.</td></tr>`;
+          } else {
+            let stageHtml = '';
+            filteredDjs.forEach(row => {
+              const baseCost = parseFloat(row.cost) || 0;
+              const totalIncCost = row.vat === 'YES' ? baseCost * 1.2 : baseCost;
+              const durText = row.duration === 1 ? "1 Hour" : row.duration === 1.5 ? "1.5 Hours" : "2 Hours";
+              stageHtml += `<tr>
+                <td style="font-weight:bold; color:var(--accent-blue);">${row.stage || 'Lighthouse'}</td>
+                <td style="font-weight:bold; color:var(--accent-rose);">${row.name}</td>
+                <td><span class="badge">${row.type}</span></td>
+                <td style="color:var(--text-muted);">${row.day || '-'}</td>
+                <td style="font-weight:600; color:var(--accent-purple);">${row.time || '-'} (${durText})</td>
+                <td style="text-align:right; font-weight:bold; color:var(--accent-green);">${formatGBP(totalIncCost)}</td>
+              </tr>`;
+            });
+            dashStageBody.innerHTML = stageHtml;
+          }
+        }
+
+        let totalTasks = 0, completedTasks = 0, outstanding = 0;
+        const leadCounts = { "James Dunn": 0, "Matt Prevett": 0, "Ben Wass": 0, "Darren Wallond": 0, "Tracey Gascoyne": 0, "Mel Chapman": 0 };
+        const leadMap = { "JD": "James Dunn", "MP": "Matt Prevett", "BW": "Ben Wass", "DW": "Darren Wallond", "TG": "Tracey Gascoyne", "MC": "Mel Chapman" };
+
+        planData.forEach(r => {
+          if (!r.section) {
+            totalTasks++;
+            if (r.completed) completedTasks++;
+            else {
+              outstanding++;
+              const name = leadMap[r.p1] || r.p1;
+              if (leadCounts[name] !== undefined) leadCounts[name]++;
+            }
+          }
+        });
+
+        document.getElementById('projTotalTasks').innerText = `${outstanding} Tasks`;
+        const pct = totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : 0;
+        document.getElementById('projProgressRate').innerText = `${pct}%`;
+
+        let leadHtml = '';
+        for (const [name, count] of Object.entries(leadCounts)) {
+          if (count > 0) leadHtml += `<tr><td>${name}</td><td style="text-align:center;">${count}</td><td style="text-align:right;"><span class="badge">Active</span></td></tr>`;
+        }
+        document.getElementById('leadWorkloadBody').innerHTML = leadHtml || `<tr><td colspan="3" style="text-align:center; color:var(--text-muted);">All clear</td></tr>`;
+
+        // Render Budget Table
+        const bBody = document.getElementById('budgetBody');
+        if (bBody) {
+          let bHtml = '';
+          budgetData.forEach((row, idx) => {
+            const vat = row.vat === 'YES' ? (row.net || 0) * 0.2 : 0;
+            const isDjRow = /DJ|Act fee/i.test(row.item);
+            bHtml += `<tr>
+              <td>${row.item}</td>
+              <td>${row.cat}</td>
+              <td style="text-align:right;">${formatGBP(row.net)}</td>
+              <td style="text-align:center;">${row.vat}</td>
+              <td style="text-align:right;">${formatGBP(vat)}</td>
+              <td style="text-align:right;">${formatGBP((row.net || 0) + vat)}</td>
+              <td style="text-align:right;">${isDjRow ? `<span style="color:var(--accent-green); font-weight:bold;">${formatGBP(row.update)} (Synced)</span>` : formatGBP(row.update)}</td>
+              <td style="text-align:center;">${row.owner || '-'}</td>
+              <td style="text-align:center;"><button class="edit-btn" onclick="deleteBudgetItem(${idx})">Del</button></td>
+            </tr>`;
+          });
+          bBody.innerHTML = bHtml;
+        }
+
+        // Render Sales Target Table
+        const tBody = document.getElementById('targetBody');
+        if (tBody) {
+          let tHtml = '';
+          targetData.forEach((row, idx) => {
+            const tot = (row.qty || 0) * (row.price || 0);
+            tHtml += `<tr>
+              <td>${row.day}</td>
+              <td>${row.type}</td>
+              <td style="text-align:center;">${row.qty}</td>
+              <td style="text-align:right;">${formatGBP(row.price / 1.2)}</td>
+              <td style="text-align:right;">${formatGBP(row.price - (row.price / 1.2))}</td>
+              <td style="text-align:right;">${formatGBP(row.price)}</td>
+              <td style="text-align:right;">${formatGBP(tot)}</td>
+              <td style="text-align:center;">
+                <button class="edit-btn" onclick="openTargetModal(${idx})">Edit</button>
+                <button class="edit-btn" onclick="deleteTargetItem(${idx})" style="background:rgba(225,29,72,0.2); color:var(--accent-rose); border-color:var(--border-color); margin-left:4px;">Del</button>
+              </td>
+            </tr>`;
+          });
+          tBody.innerHTML = tHtml;
+        }
+
+        // Render Plan Table
+        const pBody = document.getElementById('planBody');
+        if (pBody) {
+          let pHtml = '';
+          planData.forEach((row, idx) => {
+            if (row.section) {
+              pHtml += `<tr class="section-row"><td colspan="10">📁 ${row.section}</td></tr>`;
+            } else {
+              pHtml += `<tr>
+                <td style="text-align:center;"><input type="checkbox" onchange="toggleTask(${idx}, this)" ${row.completed ? 'checked' : ''} style="width:14px; height:14px;"></td>
+                <td style="font-weight:600;">${row.task}</td>
+                <td style="text-align:center;"><span class="badge">${row.p1 || '-'}</span></td>
+                <td style="text-align:center;"><span class="badge">${row.p2 || '-'}</span></td>
+                <td style="text-align:center;">${row.p3 || '-'}</td>
+                <td style="color:var(--accent-amber);">${row.update || '-'}</td>
+                <td>${row.steps || '-'}</td>
+                <td>${row.stepsOwner || '-'}</td>
+                <td>${row.stepsDate || '-'}</td>
+                <td style="text-align:center;">
+                  <button class="edit-btn" onclick="openPlanModal(${idx})">Edit</button>
+                </td>
+              </tr>`;
+            }
+          });
+          pBody.innerHTML = pHtml;
+        }
+
+        // Render DJs Table
+        const djBody = document.getElementById('djBody');
+        if (djBody) {
+          let djHtml = '';
+          djData.forEach((row, idx) => {
+            const cost = parseFloat(row.cost) || 0;
+            const vat = row.vat === 'YES' ? cost * 0.2 : 0;
+            const durText = row.duration === 1 ? "1 Hour" : row.duration === 1.5 ? "1.5 Hours" : "2 Hours";
+            djHtml += `<tr>
+              <td style="font-weight:bold; color:var(--accent-rose);">${row.name}</td>
+              <td><span class="badge">${row.type}</span></td>
+              <td style="text-align:right;">${formatGBP(cost)}</td>
+              <td style="text-align:center;">${row.vat}</td>
+              <td style="text-align:right;">${formatGBP(vat)}</td>
+              <td style="text-align:right; font-weight:bold;">${formatGBP(cost + vat)}</td>
+              <td>${row.stage}</td>
+              <td>${row.day}</td>
+              <td>${row.time} (${durText})</td>
+              <td>${row.drinks || '-'}</td>
+              <td>${row.food || '-'}</td>
+              <td style="text-align:center;">
+                <button class="edit-btn" onclick="openDjModal(${idx})">Edit</button>
+                <button class="edit-btn" onclick="deleteDjItem(${idx})" style="background:rgba(225,29,72,0.2); color:var(--accent-rose); border-color:var(--border-color); margin-left:4px;">Del</button>
+              </td>
+            </tr>`;
+          });
+          djBody.innerHTML = djHtml;
+        }
+
+      } catch (e) { console.error(e); }
+    }
+
+    // Outstanding Payments Table & Totals Calculator
+    function buildOutstandingTable() {
+      const oBody = document.getElementById('outstandingBody');
+      if (!oBody) return;
+      
+      let totalOverallOwed = 0;
+      let nextPaymentVal = Infinity;
+      let nextPaymentDateStr = "-";
+      
+      let html = '';
+      if (outstandingData.length === 0) {
+        html = `<tr><td colspan="7" style="text-align:center; color:var(--text-muted); padding:14px;">No outstanding payments logged.</td></tr>`;
+      } else {
+        // Sort by due date ascending
+        const sorted = [...outstandingData].sort((a,b) => new Date(a.dueDate || '2027-07-30') - new Date(b.dueDate || '2027-07-30'));
+
+        sorted.forEach((item, idx) => {
+          const originalIndex = outstandingData.indexOf(item);
+          if (!item.paid) {
+            totalOverallOwed += (item.amount || 0);
+            const dTime = new Date(item.dueDate || '2027-07-30').getTime();
+            if (dTime < nextPaymentVal) {
+              nextPaymentVal = dTime;
+              nextPaymentDateStr = `${item.supplier} (${item.dueDate})`;
+            }
+          }
+
+          const statusBadge = item.paid 
+            ? `<span class="badge" style="background:rgba(16,185,129,0.15); color:var(--accent-green); border-color:var(--accent-green);">Paid</span>`
+            : `<span class="badge" style="background:rgba(245,158,11,0.15); color:var(--accent-amber); border-color:var(--accent-amber);">Pending</span>`;
+          
+          html += `<tr>
+            <td style="text-align:center;"><input type="checkbox" onchange="toggleOutstandingPaid(${originalIndex}, this)" ${item.paid ? 'checked' : ''} style="width:16px; height:16px; cursor:pointer;"></td>
+            <td style="font-weight:bold; color:var(--accent-blue);">${item.supplier}</td>
+            <td>${item.desc}</td>
+            <td style="text-align:right; font-weight:bold; color:${item.paid ? 'var(--text-muted)' : 'var(--accent-rose)'};">${formatGBP(item.amount)}</td>
+            <td style="color:var(--text-muted);">${item.dueDate || '-'}</td>
+            <td style="text-align:center;">${statusBadge}</td>
+            <td style="text-align:center;">
+              <button class="edit-btn" onclick="openOutstandingModal(${originalIndex})">Edit</button>
+              <button class="edit-btn" onclick="deleteOutstandingItem(${originalIndex})" style="background:rgba(225,29,72,0.2); color:var(--accent-rose); border-color:var(--border-color); margin-left:4px;">Del</button>
+            </td>
+          </tr>`;
+        });
+      }
+      oBody.innerHTML = html;
+
+      document.getElementById('overallOwedAmount').innerText = formatGBP(totalOverallOwed);
+      document.getElementById('nextPaymentAmount').innerText = nextPaymentVal === Infinity ? formatGBP(0) : formatGBP(outstandingData.find(i => !i.paid && new Date(i.dueDate).getTime() === nextPaymentVal)?.amount || 0);
+      document.getElementById('nextPaymentDate').innerText = `Due: ${nextPaymentDateStr}`;
+
+      const months = parseInt(document.getElementById('installmentMonths').value) || 1;
+      const monthlyPmt = totalOverallOwed / months;
+      document.getElementById('installmentCalcOutput').innerText = `${months} Month(s): ${formatGBP(monthlyPmt)} / mo`;
+    }
+
+    function toggleOutstandingPaid(idx, el) {
+      outstandingData[idx].paid = el.checked;
+      saveAllToFirebase();
+      buildOutstandingTable();
+    }
+
+    function openOutstandingModal(idx) {
+      document.getElementById('outstandingEditIndex').value = idx;
+      if (idx === -1) {
+        document.getElementById('outstandingModalTitle').innerText = "Add Outstanding Payment";
+        document.getElementById('oModalSupplier').value = "";
+        document.getElementById('oModalDesc').value = "";
+        document.getElementById('oModalAmount').value = "";
+        document.getElementById('oModalDate').value = new Date().toISOString().split('T')[0];
+      } else {
+        document.getElementById('outstandingModalTitle').innerText = "Edit Outstanding Payment";
+        const item = outstandingData[idx];
+        document.getElementById('oModalSupplier').value = item.supplier;
+        document.getElementById('oModalDesc').value = item.desc;
+        document.getElementById('oModalAmount').value = item.amount;
+        document.getElementById('oModalDate').value = item.dueDate || '';
+      }
+      document.getElementById('outstandingModal').classList.add('active');
+    }
+    function closeOutstandingModal() { document.getElementById('outstandingModal').classList.remove('active'); }
+    function saveOutstandingItem() {
+      const idx = parseInt(document.getElementById('outstandingEditIndex').value);
+      const newItem = {
+        supplier: document.getElementById('oModalSupplier').value.trim(),
+        desc: document.getElementById('oModalDesc').value.trim(),
+        amount: parseFloat(document.getElementById('oModalAmount').value) || 0,
+        dueDate: document.getElementById('oModalDate').value,
+        paid: idx !== -1 ? outstandingData[idx].paid : false
+      };
+      if (idx === -1) outstandingData.push(newItem); else outstandingData[idx] = newItem;
+      saveAllToFirebase();
+      closeOutstandingModal();
+      buildOutstandingTable();
+    }
+    function deleteOutstandingItem(idx) {
+      outstandingData.splice(idx, 1);
+      saveAllToFirebase();
+      buildOutstandingTable();
+    }
+    function resetOutstanding() {
+      outstandingData = [...defaultOutstanding];
+      saveAllToFirebase();
+      buildOutstandingTable();
+    }
+
+    // Socials Planner Rendering & Handlers
+    function buildSocialsPlanner() {
+      const body = document.getElementById('socialsPlannerBody');
+      if (!body) return;
+
+      document.getElementById('adminExternalPortalBtn').href = adminSocialsPortalUrl;
+
+      // Mock live metrics preview based on posts count
+      document.getElementById('metricReach').innerText = (socialPostsData.length * 14250).toLocaleString();
+      document.getElementById('metricEngagement').innerText = "5.8%";
+      document.getElementById('metricTickets').innerText = (socialPostsData.length * 184).toLocaleString();
+
+      let html = '';
+      if (socialPostsData.length === 0) {
+        html = `<tr><td colspan="7" style="text-align:center; color:var(--text-muted); padding:14px;">No posts scheduled.</td></tr>`;
+      } else {
+        socialPostsData.forEach((post, idx) => {
+          let badgeColor = "var(--text-muted)";
+          if (post.status === "Published") badgeColor = "var(--accent-green)";
+          else if (post.status === "Scheduled") badgeColor = "var(--accent-blue)";
+          else if (post.status === "Drafted") badgeColor = "var(--accent-amber)";
+
+          html += `<tr>
+            <td style="font-weight:bold; color:var(--accent-blue);">${post.phase}</td>
+            <td><span class="badge">${post.platform}</span></td>
+            <td>${post.topic}</td>
+            <td style="color:var(--text-muted);">${post.freq}</td>
+            <td style="color:var(--text-purple); font-weight:600;">${post.date || '-'}</td>
+            <td style="text-align:center;"><span class="badge" style="color:${badgeColor}; border-color:${badgeColor};">${post.status}</span></td>
+            <td style="text-align:center;">
+              <button class="edit-btn" onclick="openSocialPostModal(${idx})">Edit</button>
+              <button class="edit-btn" onclick="deleteSocialPostItem(${idx})" style="background:rgba(225,29,72,0.2); color:var(--accent-rose); border-color:var(--border-color); margin-left:4px;">Del</button>
+            </td>
+          </tr>`;
+        });
+      }
+      body.innerHTML = html;
+    }
+
+    function openSocialsAdminModal() {
+      document.getElementById('adminPortalUrlInput').value = adminSocialsPortalUrl;
+      document.getElementById('socialsAdminModal').classList.add('active');
+    }
+    function closeSocialsAdminModal() { document.getElementById('socialsAdminModal').classList.remove('active'); }
+    function saveSocialsAdminLink() {
+      const url = document.getElementById('adminPortalUrlInput').value.trim();
+      if (url) {
+        adminSocialsPortalUrl = url;
+        saveAllToFirebase();
+        buildSocialsPlanner();
+        closeSocialsAdminModal();
+        alert("✅ Admin portal link updated successfully!");
+      }
+    }
+
+    function openSocialPostModal(idx) {
+      document.getElementById('socialPostEditIndex').value = idx;
+      if (idx === -1) {
+        document.getElementById('spModalPhase').value = "";
+        document.getElementById('spModalPlatform').value = "Instagram (Reels/Feed)";
+        document.getElementById('spModalTopic').value = "";
+        document.getElementById('spModalFreq').value = "2x Weekly";
+        document.getElementById('spModalDate').value = new Date().toISOString().split('T')[0];
+        document.getElementById('spModalStatus').value = "Planned";
+      } else {
+        const item = socialPostsData[idx];
+        document.getElementById('spModalPhase').value = item.phase;
+        document.getElementById('spModalPlatform').value = item.platform;
+        document.getElementById('spModalTopic').value = item.topic;
+        document.getElementById('spModalFreq').value = item.freq;
+        document.getElementById('spModalDate').value = item.date;
+        document.getElementById('spModalStatus').value = item.status;
+      }
+      document.getElementById('socialPostModal').classList.add('active');
+    }
+    function closeSocialPostModal() { document.getElementById('socialPostModal').classList.remove('active'); }
+    function saveSocialPostItem() {
+      const idx = parseInt(document.getElementById('socialPostEditIndex').value);
+      const newItem = {
+        phase: document.getElementById('spModalPhase').value.trim(),
+        platform: document.getElementById('spModalPlatform').value,
+        topic: document.getElementById('spModalTopic').value.trim(),
+        freq: document.getElementById('spModalFreq').value.trim(),
+        date: document.getElementById('spModalDate').value,
+        status: document.getElementById('spModalStatus').value
+      };
+      if (idx === -1) socialPostsData.push(newItem); else socialPostsData[idx] = newItem;
+      saveAllToFirebase();
+      closeSocialPostModal();
+      buildSocialsPlanner();
+    }
+    function deleteSocialPostItem(idx) {
+      socialPostsData.splice(idx, 1);
+      saveAllToFirebase();
+      buildSocialsPlanner();
+    }
+
+    // Roles & Admin Tables Rendering
+    function buildRolesTable() {
+      const rBody = document.getElementById('rolesBody');
+      if (!rBody) return;
+      let html = '';
+      rolesData.forEach((row, idx) => {
+        if (row.section) {
+          html += `<tr class="section-row"><td colspan="5">📁 ${row.section}</td></tr>`;
+        } else {
+          html += `<tr>
+            <td style="font-weight:600;">${row.task}</td>
+            <td><span class="badge" style="color:var(--accent-blue);">${row.m1 || '-'}</span></td>
+            <td><span class="badge" style="color:var(--accent-purple);">${row.m2 || '-'}</span></td>
+            <td>${row.m3 || '-'}</td>
+            <td style="text-align:center;">
+              <button class="edit-btn" onclick="openRolesModal(${idx})">Edit</button>
+              <button class="edit-btn" onclick="deleteRolesItem(${idx})" style="background:rgba(225,29,72,0.2); color:var(--accent-rose); border-color:var(--border-color); margin-left:4px;">Del</button>
+            </td>
+          </tr>`;
+        }
+      });
+      rBody.innerHTML = html;
+    }
+
+    function openRolesModal(idx) {
+      document.getElementById('rolesEditIndex').value = idx;
+      if (idx === -1) {
+        document.getElementById('rModalTask').value = '';
+        document.getElementById('rModalM1').value = '';
+        document.getElementById('rModalM2').value = '';
+        document.getElementById('rModalM3').value = '';
+      } else {
+        const item = rolesData[idx];
+        document.getElementById('rModalTask').value = item.task || '';
+        document.getElementById('rModalM1').value = item.m1 || '';
+        document.getElementById('rModalM2').value = item.m2 || '';
+        document.getElementById('rModalM3').value = item.m3 || '';
+      }
+      document.getElementById('rolesModal').classList.add('active');
+    }
+    function closeRolesModal() { document.getElementById('rolesModal').classList.remove('active'); }
+    function saveRolesItem() {
+      const idx = parseInt(document.getElementById('rolesEditIndex').value);
+      const newItem = {
+        task: document.getElementById('rModalTask').value.trim(),
+        m1: document.getElementById('rModalM1').value.trim(),
+        m2: document.getElementById('rModalM2').value.trim(),
+        m3: document.getElementById('rModalM3').value.trim()
+      };
+      if (idx === -1) rolesData.push(newItem); else rolesData[idx] = newItem;
+      saveAllToFirebase();
+      closeRolesModal();
+      buildRolesTable();
+    }
+    function deleteRolesItem(idx) {
+      rolesData.splice(idx, 1);
+      saveAllToFirebase();
+      buildRolesTable();
+    }
+    function resetRoles() {
+      rolesData = [...defaultRoles];
+      saveAllToFirebase();
+      buildRolesTable();
+    }
+
+    function buildAdminPanel() {
+      const uBody = document.getElementById('adminUsersBody');
+      if (uBody) {
+        let uHtml = '';
+        const allKeys = Object.keys(usersRegistry);
+        if (allKeys.length === 0) {
+          uHtml = `<tr><td colspan="4" style="text-align:center; color:var(--text-muted); padding:14px;">No registered users found.</td></tr>`;
+        } else {
+          allKeys.forEach(k => {
+            const u = usersRegistry[k];
+            const emailKey = u.email.replace(/\./g, '_');
+            const role = userRolesMap[emailKey] || 'team';
+            uHtml += `<tr>
+              <td><b>${u.email}</b></td>
+              <td style="color:var(--text-muted);">${new Date(u.lastLogin || Date.now()).toLocaleString('en-GB')}</td>
+              <td style="text-align:center;"><span class="badge" style="color:var(--accent-blue);">${role}</span></td>
+              <td style="text-align:center;">
+                <select onchange="updateUserRole('${u.email}', this.value)" style="padding: 3px 6px; font-size: 11px;">
+                  <option value="pending" ${role==='pending'?'selected':''}>Pending</option>
+                  <option value="team" ${role==='team'?'selected':''}>Team Member</option>
+                  <option value="director" ${role==='director'?'selected':''}>Director</option>
+                  <option value="admin" ${role==='admin'?'selected':''}>Admin</option>
+                </select>
+              </td>
+            </tr>`;
+          });
+        }
+        uBody.innerHTML = uHtml;
+      }
+
+      const lBody = document.getElementById('auditLogsBody');
+      if (lBody) {
+        let lHtml = '';
+        if (auditLogsList.length === 0) {
+          lHtml = `<tr><td colspan="3" style="text-align:center; color:var(--text-muted); padding:14px;">No audit logs recorded yet.</td></tr>`;
+        } else {
+          auditLogsList.slice().reverse().forEach(log => {
+            lHtml += `<tr>
+              <td style="color:var(--text-muted); white-space:nowrap;">${log.timestamp}</td>
+              <td style="font-weight:bold; color:var(--accent-purple);">${log.email}</td>
+              <td>${log.action}</td>
+            </tr>`;
+          });
+        }
+        lBody.innerHTML = lHtml;
+      }
+    }
+
+    function updateUserRole(email, newRole) {
+      const key = email.replace(/\./g, '_');
+      db.ref(`sif27_festival_data/userRoles/${key}`).set(newRole);
+      logActivity(currentUserEmail, `Updated role for ${email} to ${newRole}`);
+      alert(`✅ Updated ${email} role to ${newRole}`);
+    }
+
+    function clearAuditLogs() {
+      if (confirm("Are you sure you want to clear audit logs?")) {
+        db.ref('sif27_festival_data/auditLogs').remove();
+        auditLogsList = [];
+        buildAdminPanel();
+      }
+    }
+
+    // Modal & Edit Handlers
+    function openPlanModal(idx) {
+      document.getElementById('planEditIndex').value = idx;
+      const item = planData[idx];
+      document.getElementById('pModalTask').value = item.task;
+      document.getElementById('pModalP1').value = item.p1 || '';
+      document.getElementById('pModalP2').value = item.p2 || '';
+      document.getElementById('pModalP3').value = item.p3 || '';
+      document.getElementById('pModalUpdate').value = item.update || '';
+      document.getElementById('pModalSteps').value = item.steps || '';
+      document.getElementById('pModalStepsOwner').value = item.stepsOwner || '';
+      document.getElementById('pModalStepsDate').value = item.stepsDate || '';
+      document.getElementById('planModal').classList.add('active');
+    }
+    function closePlanModal() { document.getElementById('planModal').classList.remove('active'); }
+    function savePlanItem() {
+      const idx = parseInt(document.getElementById('planEditIndex').value);
+      planData[idx].p1 = document.getElementById('pModalP1').value;
+      planData[idx].p2 = document.getElementById('pModalP2').value;
+      planData[idx].p3 = document.getElementById('pModalP3').value;
+      planData[idx].update = document.getElementById('pModalUpdate').value;
+      planData[idx].steps = document.getElementById('pModalSteps').value;
+      planData[idx].stepsOwner = document.getElementById('pModalStepsOwner').value;
+      planData[idx].stepsDate = document.getElementById('pModalStepsDate').value;
+      saveAllToFirebase();
+      closePlanModal();
+      buildTables();
+    }
+
+    function openPlanAddModal() { document.getElementById('planAddModal').classList.add('active'); }
+    function closePlanAddModal() { document.getElementById('planAddModal').classList.remove('active'); }
+    function saveNewPlanItem() {
+      const section = document.getElementById('pAddSection').value;
+      const taskName = document.getElementById('pAddTaskName').value.trim();
+      if (!taskName) return;
+      planData.push({
+        task: taskName,
+        p1: document.getElementById('pAddP1').value,
+        p2: document.getElementById('pAddP2').value,
+        p3: document.getElementById('pAddP3').value,
+        update: document.getElementById('pAddUpdate').value,
+        steps: document.getElementById('pAddSteps').value,
+        stepsOwner: document.getElementById('pAddStepsOwner').value,
+        stepsDate: document.getElementById('pAddStepsDate').value,
+        completed: false
+      });
+      saveAllToFirebase();
+      closePlanAddModal();
+      buildTables();
+    }
+
+    function toggleTask(idx, el) { planData[idx].completed = el.checked; saveAllToFirebase(); buildTables(); }
+
+    function openTargetModal(idx) {
+      document.getElementById('targetEditIndex').value = idx;
+      if (idx === -1) {
+        document.getElementById('targetModalTitle').innerText = "Add Ticket Target";
+        document.getElementById('tModalDay').value = "Friday 30th July";
+        document.getElementById('tModalType').value = "";
+        document.getElementById('tModalQty').value = "";
+        document.getElementById('tModalPrice').value = "";
+      } else {
+        document.getElementById('targetModalTitle').innerText = "Edit Ticket Target";
+        const item = targetData[idx];
+        document.getElementById('tModalDay').value = item.day;
+        document.getElementById('tModalType').value = item.type;
+        document.getElementById('tModalQty').value = item.qty;
+        document.getElementById('tModalPrice').value = item.price;
+      }
+      document.getElementById('targetModal').classList.add('active');
+    }
+    function closeTargetModal() { document.getElementById('targetModal').classList.remove('active'); }
+    function saveTargetItem() {
+      const idx = parseInt(document.getElementById('targetEditIndex').value);
+      const newItem = {
+        day: document.getElementById('tModalDay').value,
+        type: document.getElementById('tModalType').value,
+        qty: parseInt(document.getElementById('tModalQty').value) || 0,
+        price: parseFloat(document.getElementById('tModalPrice').value) || 0
+      };
+      if (idx === -1) targetData.push(newItem); else targetData[idx] = newItem;
+      saveAllToFirebase();
+      closeTargetModal();
+      buildTables();
+    }
+    function deleteTargetItem(idx) {
+      targetData.splice(idx, 1);
+      saveAllToFirebase();
+      buildTables();
+    }
+    function resetTargets() {
+      targetData = [...defaultTargets];
+      saveAllToFirebase();
+      buildTables();
+    }
+
+    function openSponsorshipModal(idx) {
+      document.getElementById('sponsorshipEditIndex').value = idx;
+      if (idx === -1) {
+        document.getElementById('sponsorshipModalTitle').innerText = "Add Sponsorship";
+        document.getElementById('sModalCompany').value = "";
+        document.getElementById('sModalArea').value = "";
+        document.getElementById('sModalAmount').value = "";
+      } else {
+        document.getElementById('sponsorshipModalTitle').innerText = "Edit Sponsorship";
+        const item = sponsorshipData[idx];
+        document.getElementById('sModalCompany').value = item.company;
+        document.getElementById('sModalArea').value = item.area;
+        document.getElementById('sModalAmount').value = item.amount;
+      }
+      document.getElementById('sponsorshipModal').classList.add('active');
+    }
+    function closeSponsorshipModal() { document.getElementById('sponsorshipModal').classList.remove('active'); }
+    function saveSponsorshipItem() {
+      const idx = parseInt(document.getElementById('sponsorshipEditIndex').value);
+      const newItem = {
+        company: document.getElementById('sModalCompany').value.trim(),
+        area: document.getElementById('sModalArea').value.trim(),
+        amount: parseFloat(document.getElementById('sModalAmount').value) || 0
+      };
+      if (idx === -1) sponsorshipData.push(newItem); else sponsorshipData[idx] = newItem;
+      saveAllToFirebase();
+      closeSponsorshipModal();
+      buildTables();
+    }
+    function deleteSponsorshipItem(idx) {
+      sponsorshipData.splice(idx, 1);
+      saveAllToFirebase();
+      buildTables();
+    }
+    function resetSponsorships() {
+      sponsorshipData = [...defaultSponsorships];
+      saveAllToFirebase();
+      buildTables();
+    }
+
+    function openBudgetModal(idx) {
+      budgetData.push({ item: "New Expense", cat: "General", net: 1000, vat: "YES", update: 0, owner: "James Dunn" });
+      saveAllToFirebase();
+      buildTables();
+    }
+    function deleteBudgetItem(idx) {
+      budgetData.splice(idx, 1);
+      saveAllToFirebase();
+      buildTables();
+    }
+    function resetBudget() {
+      budgetData = [...defaultBudget];
+      saveAllToFirebase();
+      buildTables();
+    }
+
+    function openDjModal(idx) {
+      document.getElementById('djEditIndex').value = idx;
+      if (idx === -1) {
+        document.getElementById('djModalTitle').innerText = "Add New Act";
+        document.getElementById('djName').value = '';
+        document.getElementById('djType').value = 'DJ';
+        document.getElementById('djCost').value = '';
+        document.getElementById('djVat').value = 'YES';
+        document.getElementById('djStage').value = 'Lighthouse (Main Stage)';
+        document.getElementById('djDay').value = 'Friday 30th July';
+        updateTimeSlots();
+        document.getElementById('djDuration').value = '2';
+        document.getElementById('djDrinks').value = '';
+        document.getElementById('djFood').value = '';
+      } else {
+        document.getElementById('djModalTitle').innerText = "Edit Act";
+        const act = djData[idx];
+        document.getElementById('djName').value = act.name;
+        document.getElementById('djType').value = act.type;
+        document.getElementById('djCost').value = act.cost;
+        document.getElementById('djVat').value = act.vat;
+        document.getElementById('djStage').value = act.stage || 'Lighthouse (Main Stage)';
+        document.getElementById('djDay').value = act.day;
+        updateTimeSlots(act.time);
+        document.getElementById('djDuration').value = act.duration || 2;
+        document.getElementById('djDrinks').value = act.drinks;
+        document.getElementById('djFood').value = act.food;
+      }
+      document.getElementById('djModal').classList.add('active');
+    }
+    function closeDjModal() { document.getElementById('djModal').classList.remove('active'); }
+    function saveDjItem() {
+      const idx = parseInt(document.getElementById('djEditIndex').value);
+      const act = {
+        name: document.getElementById('djName').value,
+        type: document.getElementById('djType').value,
+        cost: parseFloat(document.getElementById('djCost').value) || 0,
+        vat: document.getElementById('djVat').value,
+        stage: document.getElementById('djStage').value,
+        day: document.getElementById('djDay').value,
+        time: document.getElementById('djTime').value,
+        duration: parseFloat(document.getElementById('djDuration').value) || 2,
+        drinks: document.getElementById('djDrinks').value,
+        food: document.getElementById('djFood').value
+      };
+      if (idx === -1) djData.push(act); else djData[idx] = act;
+      saveAllToFirebase();
+      closeDjModal();
+      buildTables();
+    }
+    function deleteDjItem(idx) {
+      djData.splice(idx, 1);
+      saveAllToFirebase();
+      buildTables();
+    }
+    function resetDjs() {
+      djData = [...defaultDjs];
+      saveAllToFirebase();
+      buildTables();
+    }
+
+    function updateBarMultiplier(el, day) {
+      barMultipliers[day] = parseFloat(el.value) || 0;
+      saveAllToFirebase();
+      buildTables();
+    }
+
+    function updateTimeSlots(selectedTime) {
+      const day = document.getElementById('djDay').value;
+      const select = document.getElementById('djTime');
+      const slots = day.includes('Friday') ? ["16:00", "16:30", "17:00", "17:30", "18:00", "18:30", "19:00", "19:30", "20:00", "20:30", "21:00", "21:30", "22:00", "22:30"] : ["13:00", "13:30", "14:00", "14:30", "15:00", "15:30", "16:00", "16:30", "17:00", "17:30", "18:00", "18:30", "19:00", "19:30", "20:00", "20:30", "21:00", "21:30", "22:00", "22:30"];
+      let html = '';
+      slots.forEach(s => html += `<option value="${s}" ${selectedTime === s ? 'selected' : ''}>${s}</option>`);
+      select.innerHTML = html;
+    }
+
+    function switchCalDay(day) { currentCalDay = day; buildCalendarMatrix(); }
+    
+    function buildCalendarMatrix() {
+      const body = document.getElementById('calendarMatrixBody');
+      if (!body) return;
+      const slots = currentCalDay.includes('Friday') ? ["16:00", "16:30", "17:00", "17:30", "18:00", "18:30", "19:00", "19:30", "20:00", "20:30", "21:00", "21:30", "22:00"] : ["13:00", "13:30", "14:00", "14:30", "15:00", "15:30", "16:00", "16:30", "17:00", "17:30", "18:00", "18:30", "19:00", "19:30", "20:00", "20:30", "21:00", "21:30", "22:00"];
+      const stages = ["Lighthouse (Main Stage)", "Cactus (Live Stage)", "The Causeway (DnB stage)", "The Sand Bar (Disco stage)"];
+      
+      let stageBookings = {};
+      stages.forEach(st => stageBookings[st] = {});
+      let coveredSlots = {};
+      stages.forEach(st => coveredSlots[st] = new Set());
+
+      djData.forEach(act => {
+        if ((act.day || "").trim() === currentCalDay) {
+          const st = (act.stage || "").trim();
+          const startTime = act.time;
+          const durationHours = parseFloat(act.duration) || 2;
+          const totalSlotsToBlock = Math.round(durationHours * 2); // 30 min increments
+          const startIndex = slots.indexOf(startTime);
+          
+          if (startIndex !== -1 && stageBookings[st]) {
+            stageBookings[st][startTime] = { name: act.name, totalSlots: totalSlotsToBlock };
+            for (let i = 0; i < totalSlotsToBlock; i++) {
+              const slotIdx = startIndex + i;
+              if (slotIdx < slots.length) {
+                if (i > 0) coveredSlots[st].add(slots[slotIdx]);
+              }
+            }
+          }
+        }
+      });
+
+      let html = '';
+      slots.forEach(slot => {
+        html += `<tr><td style="font-weight:bold; color:var(--text-muted);">${slot}</td>`;
+        stages.forEach(st => {
+          if (stageBookings[st][slot]) {
+            const booking = stageBookings[st][slot];
+            html += `<td rowspan="${booking.totalSlots}" style="background:rgba(225,29,72,0.15); vertical-align:middle; text-align:center;"><b style="color:var(--accent-rose);">${booking.name}</b></td>`;
+          } else if (coveredSlots[st].has(slot)) {
+            // Skip rendering cell because it is covered by the rowspan above
+          } else {
+            html += `<td style="color:var(--text-muted); text-align:center;">Available</td>`;
+          }
+        });
+        html += `</tr>`;
+      });
+      body.innerHTML = html;
+    }
+
+    function toggleAccordion(id) {
+      const body = document.getElementById(id);
+      if (body) {
+        body.classList.toggle('active');
+      }
+    }
+
+    function buildTimelineAccordion() {
+      const container = document.getElementById('timelineAccordionContainer');
+      if (!container) return;
+
+      const categories = [
+        { name: "Infrastructure & Site Setup", tasks: ["Fencing & Perimeter", "Generators & Power", "Marquees & Tents", "Toilets & Waste Management"] },
+        { name: "Production & Acts", tasks: ["Sound & Lighting Rigging", "DJs & Live Acts Contracting", "Stage Design & Decoration"] },
+        { name: "Marketing & Ticketing", tasks: ["Early Bird & General Tickets", "Social Media Campaigns", "Music & Entertainment Licenses"] },
+        { name: "Safety & Operations", tasks: ["Security & Staffing", "Traffic Management", "Fire Safety & First Aid"] }
+      ];
+
+      let html = '';
+      categories.forEach((cat, idx) => {
+        const accId = `acc_cat_${idx}`;
+        html += `<div class="accordion-item">
+          <div class="accordion-header" onclick="toggleAccordion('${accId}')">
+            <span>📁 ${cat.name} (${cat.tasks.length} Scheduled Milestones)</span>
+            <span style="font-size:11px; color:var(--accent-blue);">▼ Expand</span>
+          </div>
+          <div class="accordion-body" id="${accId}">
+            <ul style="list-style-type: disc; padding-left: 20px; font-size: 12px; line-height: 1.8;">`;
+        cat.tasks.forEach(t => {
+          html += `<li><b>${t}</b> — Scheduled between Feb & Jul 2027 (Active)</li>`;
+        });
+        html += `</ul></div></div>`;
+      });
+      container.innerHTML = html;
+    }
+
+    function buildNotesBoard() {
+      const feed = document.getElementById('notesFeedContainer');
+      if (!feed) return;
+      let html = '';
+      notesData.forEach(n => {
+        html += `<div class="note-card"><div><span class="badge">${n.dept}</span><p style="margin-top:4px; font-size:12px;">${n.text}</p></div></div>`;
+      });
+      feed.innerHTML = html;
+    }
+    function submitNewNote() {
+      notesData.push({ id: Date.now(), dept: document.getElementById('noteDept').value, text: document.getElementById('noteContent').value, author: currentUserEmail, timestamp: Date.now() });
+      document.getElementById('noteContent').value = '';
+      saveAllToFirebase();
+      buildNotesBoard();
+    }
+    function resetPlan() { planData = [...defaultPlan]; saveAllToFirebase(); buildTables(); }
+
+    function runTimer() {
+      const target = new Date('July 30, 2027 12:00:00').getTime();
+      const diff = target - new Date().getTime();
+      const el = document.getElementById('countdown');
+      if (!el || diff <= 0) return;
+      const d = Math.floor(diff / (1000 * 60 * 60 * 24));
+      const h = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+      el.innerText = `${d}d ${h}h`;
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+      setInterval(runTimer, 1000);
+      document.getElementById('loginSubmitBtn').onclick = (e) => { e.preventDefault(); handleLogin(); };
+      document.getElementById('openSignupBtn').onclick = (e) => { e.preventDefault(); openSignupModal(); };
+      document.getElementById('closeSignupBtn').onclick = (e) => { e.preventDefault(); closeSignupModal(); };
+      document.getElementById('submitSignupBtn').onclick = (e) => { e.preventDefault(); handleSignup(); };
+    });
+  </script>
+</body>
+</html>
